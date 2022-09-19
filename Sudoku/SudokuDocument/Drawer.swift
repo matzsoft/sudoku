@@ -27,6 +27,7 @@ extension SudokuDocument {
         let cellSize:         CGFloat
         let cellInteriorSize: CGFloat
         let solvedFont:       CFDictionary
+        let context:          CGContext
 
         static func setupFontAttributes( color: CGColor, fontSize: CGFloat ) -> CFDictionary {
             let fontAttributes = [
@@ -77,6 +78,7 @@ extension SudokuDocument {
             puzzleSize = cellSize * limit + fatLines + thinLines
             cellInteriorSize = cellSize - 2 * Drawer.cellMargin
             solvedFont = Drawer.setupFontAttributes( color: Drawer.textColor, fontSize: cellInteriorSize )
+            context = Drawer.makeContext( size: NSSize( width: cellSize, height: cellSize ) )!
         }
         
         func penciledRect( penciled: Int ) -> CGRect {
@@ -88,7 +90,7 @@ extension SudokuDocument {
             )
         }
         
-        func draw( symbol: Character, rect: CGRect, font: CFDictionary, context: CGContext ) -> Void {
+        func draw( symbol: Character, rect: CGRect, font: CFDictionary ) -> Void {
             let symbol     = String( symbol ) as CFString
             let attrString = CFAttributedStringCreate( kCFAllocatorDefault, symbol, font )
             let line       = CTLineCreateWithAttributedString( attrString! )
@@ -103,21 +105,15 @@ extension SudokuDocument {
         }
         
         func image( cell: SudokuPuzzle.Cell, selection: SudokuPuzzle.Cell? ) -> NSImage {
-            let width  = cellSize
-            let height = cellSize
-
-            guard let context = Drawer.makeContext( size: NSSize( width: width, height: height ) ) else {
-                return NSImage( named: NSImage.cautionName )!
-            }
-            
-            draw( cell: cell, selection: selection, context: context )
+            context.clear( CGRect( x: 0, y: 0, width: context.width, height: context.height ) )
+            draw( cell: cell, selection: selection )
             return NSImage(
                 cgImage: context.makeImage()!,
-                size: NSSize( width: width, height: height )
+                size: NSSize( width: cellSize, height: cellSize )
             )
         }
         
-        func draw( cell: SudokuPuzzle.Cell, selection: SudokuPuzzle.Cell?, context: CGContext ) -> Void {
+        func draw( cell: SudokuPuzzle.Cell, selection: SudokuPuzzle.Cell? ) -> Void {
             if cell !== selection {
                 if ( cell.blockRow + cell.blockCol ).isMultiple( of: 2 ) {
                     context.setFillColor( Drawer.checkerboardLightColor )
@@ -135,7 +131,7 @@ extension SudokuDocument {
                     width: cellInteriorSize, height: cellInteriorSize
                 )
                 
-                draw( symbol: symbol, rect: rect, font: solvedFont, context: context )
+                draw( symbol: symbol, rect: rect, font: solvedFont )
                 return
             }
             
@@ -145,7 +141,7 @@ extension SudokuDocument {
                     let symbol = levelInfo.symbol( from: penciled ) ?? "?"
                     let rect   = penciledRect( penciled: penciled )
 
-                    draw( symbol: symbol, rect: rect, font: Drawer.penciledFont, context: context )
+                    draw( symbol: symbol, rect: rect, font: Drawer.penciledFont )
                 }
                 return
             }
