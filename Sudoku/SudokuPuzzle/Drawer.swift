@@ -22,6 +22,7 @@ extension SudokuPuzzle {
         static let miniCellSize = CGFloat( 10 )
         static let penciledFont = setupFontAttributes( color: textColor, fontSize: miniCellSize )
 
+        let puzzleSize:       CGFloat
         let cellSize:         CGFloat
         let cellInteriorSize: CGFloat
         let solvedFont:       CFDictionary
@@ -63,11 +64,16 @@ extension SudokuPuzzle {
             )
         }
         
-        init( level: Int ) {
-            cellSize = Drawer.cellMargin * CGFloat( level + 1 ) + Drawer.miniCellSize * CGFloat( level )
+        init( levelInfo: Level ) {
+            let level     = CGFloat( levelInfo.level )
+            let limit     = CGFloat( levelInfo.limit )
+            let fatLines  = ( level + 1 ) * Drawer.fatLine
+            let thinLines = ( level * ( level - 1 ) ) * Drawer.thinLine
+            
+            cellSize = Drawer.cellMargin * ( level + 1 ) + Drawer.miniCellSize * level
+            puzzleSize = cellSize * limit + fatLines + thinLines
             cellInteriorSize = cellSize - 2 * Drawer.cellMargin
-            solvedFont = Drawer.setupFontAttributes(
-                color: Drawer.textColor, fontSize: cellSize - 2 * Drawer.cellMargin )
+            solvedFont = Drawer.setupFontAttributes( color: Drawer.textColor, fontSize: cellInteriorSize )
         }
         
         func penciledRect( penciled: Int, puzzle: SudokuPuzzle ) -> CGRect {

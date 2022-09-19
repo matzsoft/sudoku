@@ -9,16 +9,22 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct SudokuDocument: FileDocument {
-    var puzzle: SudokuPuzzle?
+    var puzzle:    SudokuPuzzle?
     var selection: SudokuPuzzle.Cell?
+    var drawer:    SudokuPuzzle.Drawer?
 
     var levelInfo: SudokuPuzzle.Level? {
         get { puzzle?.levelInfo }
-        set { puzzle = SudokuPuzzle( levelInfo: newValue! ) }
+        set {
+            puzzle = SudokuPuzzle( levelInfo: newValue! )
+            drawer = SudokuPuzzle.Drawer( levelInfo: newValue! )
+        }
     }
     var needsLevel: Bool { levelInfo == nil }
     var levelDescription: String { levelInfo?.label ?? "No level for the puzzle." }
     var rows: [[SudokuPuzzle.Cell]] { puzzle?.rows ?? [] }
+    var puzzleSize: CGFloat { drawer?.puzzleSize ?? 0 }
+    var cellSize: CGFloat { drawer?.cellSize ?? 0 }
 
     init() {
     }
@@ -38,9 +44,24 @@ struct SudokuDocument: FileDocument {
         return .init( regularFileWithContents: data )
     }
     
+    func dividerHeight( row: Int ) -> CGFloat {
+        guard drawer != nil else { return 0 }
+        return row.isMultiple( of: levelInfo!.level )
+            ? SudokuPuzzle.Drawer.fatLine
+            : SudokuPuzzle.Drawer.thinLine
+    }
+    
+    func dividerWidth( col: Int ) -> CGFloat {
+        guard drawer != nil else { return 0 }
+        return col.isMultiple( of: levelInfo!.level )
+            ? SudokuPuzzle.Drawer.fatLine
+            : SudokuPuzzle.Drawer.thinLine
+    }
+    
     func image( cell: SudokuPuzzle.Cell ) -> NSImage {
         guard let puzzle = puzzle else { return NSImage( named: NSImage.cautionName )! }
-        return puzzle.drawer.image( cell: cell, puzzle: puzzle, selection: selection )
+        guard let drawer = drawer else { return NSImage( named: NSImage.cautionName )! }
+        return drawer.image( cell: cell, puzzle: puzzle, selection: selection )
     }
     
     @discardableResult mutating func moveTo( row: Int, col: Int ) -> Bool {

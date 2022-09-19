@@ -19,7 +19,6 @@ struct SudokuPuzzle {
     let level: Int
     let limit: Int
     let rows: [[Cell]]
-    let drawer: Drawer
     
     var cells: [Cell] { rows.flatMap { $0 } }
     var penciledCount: Int { cells.map { $0.penciled.count }.reduce( 0, + ) }
@@ -37,7 +36,6 @@ struct SudokuPuzzle {
         self.levelInfo = levelInfo
         level = levelInfo.level
         limit = levelInfo.limit
-        drawer = Drawer( level: level )
         
         rows = ( 0 ..< levelInfo.limit ).map { row in
             ( 0 ..< levelInfo.limit ).map { col in

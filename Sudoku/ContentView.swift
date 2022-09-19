@@ -14,13 +14,17 @@ struct ContentView: View {
     var body: some View {
         VStack( alignment: .leading, spacing: 0 ) {
             ForEach( document.rows ) { row in
+                HorizontalLine( document: document, row: row[0].row )
                 HStack( alignment: .top, spacing: 0 ) {
                     ForEach( row ) { cell in
+                        VerticalLine( document: document, col: cell.col )
                         Image( nsImage: document.image( cell: cell ) )
                             .onTapGesture { document.selection = cell }
                     }
+                    VerticalLine( document: document, col: 0 )
                 }
             }
+            HorizontalLine( document: document, row: 0 )
         }
         .padding()
         .background( LinearGradient(
@@ -54,5 +58,29 @@ struct ContentView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView( document: .constant( SudokuDocument() ) )
+    }
+}
+
+
+struct HorizontalLine: View {
+    var document: SudokuDocument
+    var row: Int
+
+    var body: some View {
+        Rectangle()
+            .fill( .black )
+            .frame( width: document.puzzleSize, height: document.dividerHeight( row: row ) )
+    }
+}
+
+
+struct VerticalLine: View {
+    var document: SudokuDocument
+    var col: Int
+
+    var body: some View {
+        Rectangle()
+            .fill( .black )
+            .frame( width: document.dividerWidth( col: col ), height: document.cellSize )
     }
 }
