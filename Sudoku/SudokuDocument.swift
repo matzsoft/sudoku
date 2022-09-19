@@ -8,12 +8,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-extension UTType {
-    static var exampleText: UTType {
-        UTType( importedAs: "com.example.plain-text" )
-    }
-}
-
 struct SudokuDocument: FileDocument {
     var text: String
 
@@ -21,7 +15,7 @@ struct SudokuDocument: FileDocument {
         self.text = text
     }
 
-    static var readableContentTypes: [UTType] { [.exampleText] }
+    static var readableContentTypes: [UTType] { [.text] }
 
     init( configuration: ReadConfiguration ) throws {
         guard let data = configuration.file.regularFileContents,
