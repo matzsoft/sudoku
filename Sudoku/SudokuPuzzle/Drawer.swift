@@ -94,43 +94,13 @@ extension SudokuPuzzle {
         }
         
         func image( cell: Cell, puzzle: SudokuPuzzle, selection: Cell? ) -> NSImage {
-            let left   = cell.col.isMultiple( of: puzzle.level ) ? Drawer.fatLine : Drawer.thinLine
-            let top    = cell.row.isMultiple( of: puzzle.level ) ? Drawer.fatLine : Drawer.thinLine
-            let right  = cell.col == puzzle.limit - 1 ? Drawer.fatLine : 0
-            let bottom = cell.row == puzzle.limit - 1 ? Drawer.fatLine : 0
-            let width  = cellSize + left + right
-            let height = cellSize + top + bottom
+            let width  = cellSize
+            let height = cellSize
 
             guard let context = Drawer.makeContext( size: NSSize( width: width, height: height ) ) else {
                 return NSImage( named: NSImage.cautionName )!
             }
             
-            context.setStrokeColor( Drawer.lineColor )
-            context.setLineWidth( left )
-            context.move( to: CGPoint( x: left / 2, y: 0 ) )
-            context.addLine( to: CGPoint( x: left / 2, y: height ) )
-            context.strokePath()
-            
-            context.setLineWidth( top )
-            context.move( to: CGPoint( x: 0, y: height - top / 2 ) )
-            context.addLine( to: CGPoint( x: width , y: height - top / 2 ) )
-            context.strokePath()
-
-            if bottom > 0 {
-                context.setLineWidth( bottom )
-                context.move( to: CGPoint( x: 0, y: bottom / 2 ) )
-                context.addLine( to: CGPoint( x: width, y: bottom / 2 ) )
-                context.strokePath()
-            }
-            if right > 0 {
-                let x = width - right / 2
-                context.setLineWidth( right )
-                context.move( to: CGPoint( x: x, y: 0 ) )
-                context.addLine( to: CGPoint( x: x, y: height ) )
-                context.strokePath()
-            }
-
-            context.translateBy( x: left, y: bottom )
             draw( cell: cell, puzzle: puzzle, selection: selection, context: context )
             return NSImage(
                 cgImage: context.makeImage()!,
