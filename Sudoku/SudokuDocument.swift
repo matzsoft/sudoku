@@ -37,6 +37,26 @@ struct SudokuDocument: FileDocument {
         else {
             throw CocoaError( .fileReadCorruptFile )
         }
+        let lines = string.split( separator: "\n" )
+        let level = Int( sqrt( Double( lines.count ) ) )
+        
+        guard let levelInfo = SudokuPuzzle.supportedLevels.first( where: { $0.level == level } ),
+              level * level == lines.count,
+              lines.allSatisfy( { $0.count == lines.count } )
+        else {
+            throw CocoaError( .fileReadCorruptFile )
+        }
+        puzzle = SudokuPuzzle( levelInfo: levelInfo )
+        drawer = SudokuPuzzle.Drawer( levelInfo: levelInfo )
+        for ( row, line ) in lines.enumerated() {
+            for ( col, symbol ) in line.enumerated() {
+                if let index = puzzle?.levelInfo.index( from: symbol ) {
+                    puzzle?.rows[row][col].solved = index
+                } else if symbol != "." {
+                    throw CocoaError( .fileReadCorruptFile )
+                }
+            }
+        }
     }
     
     func fileWrapper( configuration: WriteConfiguration ) throws -> FileWrapper {
