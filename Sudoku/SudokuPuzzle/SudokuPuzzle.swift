@@ -14,6 +14,7 @@ struct SudokuPuzzle {
         Level( level: 3, label: "9x9" ),
         Level( level: 4, label: "16x16" )
     ]
+    static let empty = SudokuPuzzle( levelInfo: Level( level: 0, label: "Empty" ) )
     
     let levelInfo: Level
     let level: Int

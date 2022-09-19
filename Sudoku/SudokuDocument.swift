@@ -9,24 +9,26 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct SudokuDocument: FileDocument {
-    var puzzle:    SudokuPuzzle?
+    var puzzle:    SudokuPuzzle
+    var drawer:    SudokuPuzzle.Drawer
     var selection: SudokuPuzzle.Cell?
-    var drawer:    SudokuPuzzle.Drawer?
 
-    var levelInfo: SudokuPuzzle.Level? {
-        get { puzzle?.levelInfo }
+    var levelInfo: SudokuPuzzle.Level {
+        get { puzzle.levelInfo }
         set {
-            puzzle = SudokuPuzzle( levelInfo: newValue! )
-            drawer = SudokuPuzzle.Drawer( levelInfo: newValue! )
+            puzzle = SudokuPuzzle( levelInfo: newValue )
+            drawer = SudokuPuzzle.Drawer( levelInfo: newValue )
         }
     }
-    var needsLevel: Bool { levelInfo == nil }
-    var levelDescription: String { levelInfo?.label ?? "No level for the puzzle." }
-    var rows: [[SudokuPuzzle.Cell]] { puzzle?.rows ?? [] }
-    var puzzleSize: CGFloat { drawer?.puzzleSize ?? 0 }
-    var cellSize: CGFloat { drawer?.cellSize ?? 0 }
+    var needsLevel: Bool { puzzle.levelInfo.level == SudokuPuzzle.empty.level }
+    var levelDescription: String { levelInfo.label }
+    var rows: [[SudokuPuzzle.Cell]] { puzzle.rows }
+    var puzzleSize: CGFloat { drawer.puzzleSize }
+    var cellSize: CGFloat { drawer.cellSize }
 
     init() {
+        puzzle = SudokuPuzzle.empty
+        drawer = SudokuPuzzle.Drawer( levelInfo: puzzle.levelInfo )
     }
 
     static var readableContentTypes: [UTType] { [.text] }
@@ -50,8 +52,8 @@ struct SudokuDocument: FileDocument {
         drawer = SudokuPuzzle.Drawer( levelInfo: levelInfo )
         for ( row, line ) in lines.enumerated() {
             for ( col, symbol ) in line.enumerated() {
-                if let index = puzzle?.levelInfo.index( from: symbol ) {
-                    puzzle?.rows[row][col].solved = index
+                if let index = puzzle.levelInfo.index( from: symbol ) {
+                    puzzle.rows[row][col].solved = index
                 } else if symbol != "." {
                     throw CocoaError( .fileReadCorruptFile )
                 }
@@ -65,22 +67,14 @@ struct SudokuDocument: FileDocument {
     }
     
     func dividerHeight( row: Int ) -> CGFloat {
-        guard drawer != nil else { return 0 }
-        return row.isMultiple( of: levelInfo!.level )
-            ? SudokuPuzzle.Drawer.fatLine
-            : SudokuPuzzle.Drawer.thinLine
+        row.isMultiple( of: levelInfo.level ) ? SudokuPuzzle.Drawer.fatLine : SudokuPuzzle.Drawer.thinLine
     }
     
     func dividerWidth( col: Int ) -> CGFloat {
-        guard drawer != nil else { return 0 }
-        return col.isMultiple( of: levelInfo!.level )
-            ? SudokuPuzzle.Drawer.fatLine
-            : SudokuPuzzle.Drawer.thinLine
+        col.isMultiple( of: levelInfo.level ) ? SudokuPuzzle.Drawer.fatLine : SudokuPuzzle.Drawer.thinLine
     }
     
     func image( cell: SudokuPuzzle.Cell ) -> NSImage {
-        guard let puzzle = puzzle else { return NSImage( named: NSImage.cautionName )! }
-        guard let drawer = drawer else { return NSImage( named: NSImage.cautionName )! }
         return drawer.image( cell: cell, puzzle: puzzle, selection: selection )
     }
     
@@ -93,7 +87,6 @@ struct SudokuDocument: FileDocument {
     }
     
     mutating func moveCommand( direction: MoveCommandDirection ) -> Void {
-        guard puzzle != nil else { fatalError( "No puzzle available" ) }
         guard selection != nil else {
             guard moveTo( row: 0, col: 0 ) else { fatalError( "Cannot set selection" ) }
             return
@@ -115,9 +108,8 @@ struct SudokuDocument: FileDocument {
 
     mutating func moveUp() -> Void {
         guard let selection = selection else { return }
-        guard let limit = levelInfo?.limit else { return }
         if moveTo( row: selection.row - 1, col: selection.col ) { return }
-        moveTo( row: limit - 1, col: selection.col )
+        moveTo( row: levelInfo.limit - 1, col: selection.col )
     }
     
     mutating func moveDown() -> Void {
@@ -128,7 +120,7 @@ struct SudokuDocument: FileDocument {
     
     mutating func moveLeft() -> Void {
         guard let selection = selection else { return }
-        guard let limit = levelInfo?.limit else { return }
+        let limit = levelInfo.limit
         if moveTo( row: selection.row, col: selection.col - 1 ) { return }
         if moveTo( row: selection.row - 1, col: limit - 1 ) { return }
         moveTo( row: limit - 1, col: limit - 1 )
