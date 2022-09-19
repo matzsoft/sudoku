@@ -9,7 +9,7 @@ import Foundation
 import AppKit
 import CoreText
 
-extension SudokuPuzzle {
+extension SudokuDocument {
     struct Drawer {
         static let checkerboardLightColor = CGColor( red: 1, green: 1, blue: 1, alpha: 1 )
         static let checkerboardDarkColor  = CGColor( red: 0.90, green: 0.90, blue: 0.90, alpha: 1 )
@@ -22,6 +22,7 @@ extension SudokuPuzzle {
         static let miniCellSize = CGFloat( 10 )
         static let penciledFont = setupFontAttributes( color: textColor, fontSize: miniCellSize )
 
+        let levelInfo:        SudokuPuzzle.Level
         let puzzleSize:       CGFloat
         let cellSize:         CGFloat
         let cellInteriorSize: CGFloat
@@ -64,7 +65,9 @@ extension SudokuPuzzle {
             )
         }
         
-        init( levelInfo: Level ) {
+        init( levelInfo: SudokuPuzzle.Level ) {
+            self.levelInfo = levelInfo
+            
             let level     = CGFloat( levelInfo.level )
             let limit     = CGFloat( levelInfo.limit )
             let fatLines  = ( level + 1 ) * Drawer.fatLine
@@ -76,11 +79,11 @@ extension SudokuPuzzle {
             solvedFont = Drawer.setupFontAttributes( color: Drawer.textColor, fontSize: cellInteriorSize )
         }
         
-        func penciledRect( penciled: Int, puzzle: SudokuPuzzle ) -> CGRect {
+        func penciledRect( penciled: Int ) -> CGRect {
             let skipOver = Drawer.miniCellSize + Drawer.cellMargin
             return CGRect(
-                x: Drawer.cellMargin + CGFloat( penciled % puzzle.level ) * skipOver,
-                y: Drawer.cellMargin + CGFloat( penciled / puzzle.level ) * skipOver,
+                x: Drawer.cellMargin + CGFloat( penciled % levelInfo.level ) * skipOver,
+                y: Drawer.cellMargin + CGFloat( penciled / levelInfo.level ) * skipOver,
                 width: Drawer.miniCellSize, height: Drawer.miniCellSize
             )
         }
@@ -99,7 +102,7 @@ extension SudokuPuzzle {
             CTLineDraw( line, context )
         }
         
-        func image( cell: Cell, puzzle: SudokuPuzzle, selection: Cell? ) -> NSImage {
+        func image( cell: SudokuPuzzle.Cell, selection: SudokuPuzzle.Cell? ) -> NSImage {
             let width  = cellSize
             let height = cellSize
 
@@ -107,14 +110,14 @@ extension SudokuPuzzle {
                 return NSImage( named: NSImage.cautionName )!
             }
             
-            draw( cell: cell, puzzle: puzzle, selection: selection, context: context )
+            draw( cell: cell, selection: selection, context: context )
             return NSImage(
                 cgImage: context.makeImage()!,
                 size: NSSize( width: width, height: height )
             )
         }
         
-        func draw( cell: Cell, puzzle: SudokuPuzzle, selection: Cell?, context: CGContext ) -> Void {
+        func draw( cell: SudokuPuzzle.Cell, selection: SudokuPuzzle.Cell?, context: CGContext ) -> Void {
             if cell !== selection {
                 if ( cell.blockRow + cell.blockCol ).isMultiple( of: 2 ) {
                     context.setFillColor( Drawer.checkerboardLightColor )
@@ -126,7 +129,7 @@ extension SudokuPuzzle {
             
             if let solved = cell.solved {
                 // Draw the solved number
-                let symbol = puzzle.levelInfo.symbol( from: solved ) ?? "?"
+                let symbol = levelInfo.symbol( from: solved ) ?? "?"
                 let rect   = CGRect(
                     x: Drawer.cellMargin, y: Drawer.cellMargin,
                     width: cellInteriorSize, height: cellInteriorSize
@@ -139,8 +142,8 @@ extension SudokuPuzzle {
             if !cell.penciled.isEmpty {
                 // Draw all the penciled.
                 for penciled in cell.penciled {
-                    let symbol = puzzle.levelInfo.symbol( from: penciled ) ?? "?"
-                    let rect   = penciledRect( penciled: penciled, puzzle: puzzle )
+                    let symbol = levelInfo.symbol( from: penciled ) ?? "?"
+                    let rect   = penciledRect( penciled: penciled )
 
                     draw( symbol: symbol, rect: rect, font: Drawer.penciledFont, context: context )
                 }

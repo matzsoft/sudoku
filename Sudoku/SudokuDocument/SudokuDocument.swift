@@ -10,14 +10,14 @@ import UniformTypeIdentifiers
 
 struct SudokuDocument: FileDocument {
     var puzzle:    SudokuPuzzle
-    var drawer:    SudokuPuzzle.Drawer
+    var drawer:    Drawer
     var selection: SudokuPuzzle.Cell?
 
     var levelInfo: SudokuPuzzle.Level {
         get { puzzle.levelInfo }
         set {
             puzzle = SudokuPuzzle( levelInfo: newValue )
-            drawer = SudokuPuzzle.Drawer( levelInfo: newValue )
+            drawer = Drawer( levelInfo: newValue )
         }
     }
     var needsLevel: Bool { puzzle.levelInfo.level == SudokuPuzzle.empty.level }
@@ -28,7 +28,7 @@ struct SudokuDocument: FileDocument {
 
     init() {
         puzzle = SudokuPuzzle.empty
-        drawer = SudokuPuzzle.Drawer( levelInfo: puzzle.levelInfo )
+        drawer = Drawer( levelInfo: puzzle.levelInfo )
     }
 
     static var readableContentTypes: [UTType] { [.text] }
@@ -49,7 +49,7 @@ struct SudokuDocument: FileDocument {
             throw CocoaError( .fileReadCorruptFile )
         }
         puzzle = SudokuPuzzle( levelInfo: levelInfo )
-        drawer = SudokuPuzzle.Drawer( levelInfo: levelInfo )
+        drawer = Drawer( levelInfo: levelInfo )
         for ( row, line ) in lines.enumerated() {
             for ( col, symbol ) in line.enumerated() {
                 if let index = puzzle.levelInfo.index( from: symbol ) {
@@ -67,15 +67,15 @@ struct SudokuDocument: FileDocument {
     }
     
     func dividerHeight( row: Int ) -> CGFloat {
-        row.isMultiple( of: levelInfo.level ) ? SudokuPuzzle.Drawer.fatLine : SudokuPuzzle.Drawer.thinLine
+        row.isMultiple( of: levelInfo.level ) ? Drawer.fatLine : Drawer.thinLine
     }
     
     func dividerWidth( col: Int ) -> CGFloat {
-        col.isMultiple( of: levelInfo.level ) ? SudokuPuzzle.Drawer.fatLine : SudokuPuzzle.Drawer.thinLine
+        col.isMultiple( of: levelInfo.level ) ? Drawer.fatLine : Drawer.thinLine
     }
     
     func image( cell: SudokuPuzzle.Cell ) -> NSImage {
-        return drawer.image( cell: cell, puzzle: puzzle, selection: selection )
+        return drawer.image( cell: cell, selection: selection )
     }
     
     @discardableResult mutating func moveTo( row: Int, col: Int ) -> Bool {
