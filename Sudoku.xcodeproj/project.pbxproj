@@ -20,6 +20,7 @@
 		DD52AC3F28D7FF960063F450 /* AudioVerify.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD52AC3A28D7FF960063F450 /* AudioVerify.swift */; };
 		DD52AC4028D7FF960063F450 /* SudokuPuzzle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD52AC3B28D7FF960063F450 /* SudokuPuzzle.swift */; };
 		DD52AC4128D7FF960063F450 /* Level.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD52AC3C28D7FF960063F450 /* Level.swift */; };
+		DD52AC4528D8F0630063F450 /* KeyboardHandling.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD52AC4428D8F0630063F450 /* KeyboardHandling.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -58,6 +59,7 @@
 		DD52AC3A28D7FF960063F450 /* AudioVerify.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioVerify.swift; sourceTree = "<group>"; };
 		DD52AC3B28D7FF960063F450 /* SudokuPuzzle.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SudokuPuzzle.swift; sourceTree = "<group>"; };
 		DD52AC3C28D7FF960063F450 /* Level.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Level.swift; sourceTree = "<group>"; };
+		DD52AC4428D8F0630063F450 /* KeyboardHandling.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardHandling.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -109,6 +111,7 @@
 			isa = PBXGroup;
 			children = (
 				DD52AC0E28D7FA850063F450 /* ContentView.swift */,
+				DD52AC4428D8F0630063F450 /* KeyboardHandling.swift */,
 				DD52AC0A28D7FA850063F450 /* SudokuApp.swift */,
 				DD52AC4328D840AA0063F450 /* SudokuDocument */,
 				DD52AC4228D7FFD70063F450 /* SudokuPuzzle */,
@@ -298,6 +301,7 @@
 				DD52AC3E28D7FF960063F450 /* Drawer.swift in Sources */,
 				DD52AC0B28D7FA850063F450 /* SudokuApp.swift in Sources */,
 				DD52AC4028D7FF960063F450 /* SudokuPuzzle.swift in Sources */,
+				DD52AC4528D8F0630063F450 /* KeyboardHandling.swift in Sources */,
 				DD52AC3D28D7FF960063F450 /* Cell.swift in Sources */,
 				DD52AC0D28D7FA850063F450 /* SudokuDocument.swift in Sources */,
 				DD52AC0F28D7FA850063F450 /* ContentView.swift in Sources */,

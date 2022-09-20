@@ -62,7 +62,7 @@ struct SudokuDocument: FileDocument {
     }
     
     func fileWrapper( configuration: WriteConfiguration ) throws -> FileWrapper {
-        let data = "".data( using: .utf8 )!
+        let data = puzzle.asString.data( using: .utf8 )!
         return .init( regularFileWithContents: data )
     }
     
@@ -131,5 +131,90 @@ struct SudokuDocument: FileDocument {
         if moveTo( row: selection.row, col: selection.col + 1 ) { return }
         if moveTo( row: selection.row + 1, col: 0 ) { return }
         moveTo( row: 0, col: 0 )
+    }
+
+    mutating func handleKeyEvent( event: NSEvent, undoManager: UndoManager? ) -> NSEvent? {
+        if event.modifierFlags.contains( .command ) { return event }
+        if event.modifierFlags.contains( .option ) { return event }
+        guard let characters = event.charactersIgnoringModifiers else { return event }
+        guard let selection = selection else { return event }
+
+        if characters.count == 1 {
+            let character = characters.uppercased().first!
+            
+            if let index = levelInfo.index( from: character ) {
+                if !event.modifierFlags.contains( .control ) {
+                    let oldValue = selection.solved
+//                    if oldValue != index {
+//                        undoManager?.registerUndo( withTarget: self ) { document in
+//                            document.selection = selection
+//                            selection.solved = oldValue
+//                        }
+//                    }
+                    selection.solved = index
+                    moveRight()
+                    return nil
+                } else {
+                    if selection.solved != nil { return event }
+                    if !selection.penciled.insert( index ).inserted {
+                        selection.penciled.remove( index )
+                    }
+//                    penciledCount = puzzle!.penciledCount
+                    return nil
+                }
+            }
+            
+            if character == "." || character == " " {
+                selection.solved = nil
+                moveRight()
+                return nil
+            }
+            
+            // This handles escape
+//            if event.keyCode == 53 {
+//                if stopSpeaking() { return nil }
+//            }
+            
+            switch event.specialKey {
+            case NSEvent.SpecialKey.backspace, NSEvent.SpecialKey.delete:
+                selection.solved = nil
+                moveLeft()
+                return nil
+            case NSEvent.SpecialKey.deleteForward:
+                selection.solved = nil
+                moveRight()
+                return nil
+            case NSEvent.SpecialKey.tab:
+                let newCol = ( selection.col + levelInfo.level ) / levelInfo.level * levelInfo.level
+                if !moveTo( row: selection.row, col: newCol ) {
+                    moveTo( row: selection.row, col: 0 )
+                    moveDown()
+                }
+                return nil
+            case NSEvent.SpecialKey.backTab:
+                if selection.col > 0 {
+                    let newCol = ( selection.col - 1 ) / levelInfo.level * levelInfo.level
+                    moveTo( row: selection.row, col: newCol )
+                } else {
+                    moveTo( row: selection.row, col: levelInfo.limit - levelInfo.level )
+                    moveUp()
+                }
+                return nil
+            case NSEvent.SpecialKey.carriageReturn, NSEvent.SpecialKey.newline, NSEvent.SpecialKey.enter:
+                moveTo( row: selection.row, col: 0 )
+                moveDown()
+                return nil
+            case NSEvent.SpecialKey.home:
+                moveTo( row: 0, col: 0 )
+                return nil
+            case NSEvent.SpecialKey.end:
+                let limit = levelInfo.limit
+                moveTo( row: limit - 1, col: limit - 1 )
+                return nil
+            default:
+                break
+            }
+        }
+        return event
     }
 }
