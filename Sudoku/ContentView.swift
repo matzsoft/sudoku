@@ -8,6 +8,14 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Binding var document: SudokuDocument
+
+    var body: some View {
+        PuzzleView( document: $document )
+    }
+}
+
+struct PuzzleView: View {
     @Environment( \.undoManager ) var undoManager
     @Binding var document: SudokuDocument
     @State private var needsLevel = true
