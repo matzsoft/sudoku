@@ -10,8 +10,8 @@ import SwiftUI
 @main
 struct SudokuApp: App {
     var body: some Scene {
-        DocumentGroup( newDocument: SudokuDocument() ) { file in
-            ContentView( document: file.$document )
+        DocumentGroup( newDocument: SudokuDocument.init ) { file in
+            ContentView( document: file.document )
         }
     }
 }

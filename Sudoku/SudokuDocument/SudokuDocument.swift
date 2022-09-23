@@ -8,11 +8,16 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct SudokuDocument: FileDocument {
-    var puzzle:    SudokuPuzzle
-    var drawer:    Drawer
-    var selection: SudokuPuzzle.Cell?
+final class SudokuDocument: ReferenceFileDocument {
+    typealias Snapshot = Data
+    
+    var puzzle:      SudokuPuzzle
+    var drawer:      Drawer
+    var undoManager: UndoManager?
 
+    @Published var selection: SudokuPuzzle.Cell?
+    @Published var penciledCount = 0
+    
     var levelInfo: SudokuPuzzle.Level {
         get { puzzle.levelInfo }
         set {
@@ -61,6 +66,14 @@ struct SudokuDocument: FileDocument {
         }
     }
     
+    func snapshot( contentType: UTType ) throws -> Data {
+        puzzle.asString.data( using: .utf8 )!
+    }
+    
+    func fileWrapper( snapshot: Data, configuration: WriteConfiguration ) throws -> FileWrapper {
+        FileWrapper( regularFileWithContents: snapshot )
+    }
+    
     func fileWrapper( configuration: WriteConfiguration ) throws -> FileWrapper {
         let data = puzzle.asString.data( using: .utf8 )!
         return .init( regularFileWithContents: data )
@@ -78,7 +91,7 @@ struct SudokuDocument: FileDocument {
         return drawer.image( cell: cell, selection: selection )
     }
     
-    @discardableResult mutating func moveTo( row: Int, col: Int ) -> Bool {
+    @discardableResult func moveTo( row: Int, col: Int ) -> Bool {
         guard 0 <= row && row < rows.count else { return false }
         guard 0 <= col && col < rows[0].count else { return false }
         
@@ -86,7 +99,7 @@ struct SudokuDocument: FileDocument {
         return true
     }
     
-    mutating func moveCommand( direction: MoveCommandDirection ) -> Void {
+    func moveCommand( direction: MoveCommandDirection ) -> Void {
         guard selection != nil else {
             guard moveTo( row: 0, col: 0 ) else { fatalError( "Cannot set selection" ) }
             return
@@ -106,19 +119,19 @@ struct SudokuDocument: FileDocument {
         }
     }
 
-    mutating func moveUp() -> Void {
+    func moveUp() -> Void {
         guard let selection = selection else { return }
         if moveTo( row: selection.row - 1, col: selection.col ) { return }
         moveTo( row: levelInfo.limit - 1, col: selection.col )
     }
     
-    mutating func moveDown() -> Void {
+    func moveDown() -> Void {
         guard let selection = selection else { return }
         if moveTo( row: selection.row + 1, col: selection.col ) { return }
         moveTo( row: 0, col: selection.col )
     }
     
-    mutating func moveLeft() -> Void {
+    func moveLeft() -> Void {
         guard let selection = selection else { return }
         let limit = levelInfo.limit
         if moveTo( row: selection.row, col: selection.col - 1 ) { return }
@@ -126,14 +139,14 @@ struct SudokuDocument: FileDocument {
         moveTo( row: limit - 1, col: limit - 1 )
     }
 
-    mutating func moveRight() -> Void {
+    func moveRight() -> Void {
         guard let selection = selection else { return }
         if moveTo( row: selection.row, col: selection.col + 1 ) { return }
         if moveTo( row: selection.row + 1, col: 0 ) { return }
         moveTo( row: 0, col: 0 )
     }
 
-    mutating func handleKeyEvent( event: NSEvent, undoManager: UndoManager? ) -> NSEvent? {
+    func handleKeyEvent( event: NSEvent ) -> NSEvent? {
         if event.modifierFlags.contains( .command ) { return event }
         if event.modifierFlags.contains( .option ) { return event }
         guard let characters = event.charactersIgnoringModifiers else { return event }
@@ -145,12 +158,12 @@ struct SudokuDocument: FileDocument {
             if let index = levelInfo.index( from: character ) {
                 if !event.modifierFlags.contains( .control ) {
                     let oldValue = selection.solved
-//                    if oldValue != index {
-//                        undoManager?.registerUndo( withTarget: self ) { document in
-//                            document.selection = selection
-//                            selection.solved = oldValue
-//                        }
-//                    }
+                    if oldValue != index {
+                        undoManager?.registerUndo( withTarget: self ) { document in
+                            document.selection = selection
+                            selection.solved = oldValue
+                        }
+                    }
                     selection.solved = index
                     moveRight()
                     return nil
@@ -159,7 +172,7 @@ struct SudokuDocument: FileDocument {
                     if !selection.penciled.insert( index ).inserted {
                         selection.penciled.remove( index )
                     }
-//                    penciledCount = puzzle!.penciledCount
+                    penciledCount = puzzle.penciledCount
                     return nil
                 }
             }

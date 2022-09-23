@@ -8,16 +8,32 @@
 import SwiftUI
 
 struct ContentView: View {
-    @Binding var document: SudokuDocument
+    @Environment( \.undoManager ) var undoManager
+    @ObservedObject var document: SudokuDocument
 
     var body: some View {
-        PuzzleView( document: $document )
+        document.undoManager = undoManager
+        return PuzzleView( document: document )
+            .toolbar {
+                ToolbarItemGroup( placement: .automatic ) {
+                    if let undoManager = undoManager {
+                        Button( action: undoManager.undo ) {
+                            Label( "Undo", systemImage: "arrow.uturn.backward" )
+                        }
+                        .disabled( !undoManager.canUndo )
+
+                        Button( action: undoManager.redo ) {
+                            Label( "Redo", systemImage: "arrow.uturn.forward" )
+                        }
+                        .disabled( !undoManager.canRedo )
+                    }
+                }
+            }
     }
 }
 
 struct PuzzleView: View {
-    @Environment( \.undoManager ) var undoManager
-    @Binding var document: SudokuDocument
+    @ObservedObject var document: SudokuDocument
     @State private var needsLevel = true
     @State private var keyDownMonitor: Any?
     @State private var window: NSWindow?
@@ -60,7 +76,7 @@ struct PuzzleView: View {
             needsLevel = document.needsLevel
             keyDownMonitor = NSEvent.addLocalMonitorForEvents( matching: [.keyDown] ) { event in
                 guard event.window == window else { return event }
-                return document.handleKeyEvent( event: event, undoManager: undoManager )
+                return document.handleKeyEvent( event: event )
             }
         }
         .onDisappear() {
@@ -74,7 +90,7 @@ struct PuzzleView: View {
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView( document: .constant( SudokuDocument() ) )
+        ContentView( document: SudokuDocument() )
     }
 }
 
