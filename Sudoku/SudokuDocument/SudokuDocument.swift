@@ -142,6 +142,30 @@ final class SudokuDocument: ReferenceFileDocument {
         moveTo( row: 0, col: 0 )
     }
 
+    func setSolved(
+        cell: SudokuPuzzle.Cell, newIndex: Int?,
+        endCell: SudokuPuzzle.Cell, undoCell: SudokuPuzzle.Cell
+    ) -> Void {
+        let oldIndex = cell.solved
+        guard newIndex != oldIndex else { return }
+        
+        cell.solved = newIndex
+        selection = endCell
+        undoManager?.registerUndo( withTarget: self ) { document in
+            document.setSolved( cell: cell, newIndex: oldIndex, endCell: undoCell, undoCell: endCell )
+        }
+    }
+    
+    func togglePencil( cell: SudokuPuzzle.Cell, index: Int ) -> Void {
+        if !cell.penciled.insert( index ).inserted {
+            cell.penciled.remove( index )
+        }
+        penciledCount = puzzle.penciledCount
+        undoManager?.registerUndo( withTarget: self ) { document in
+            document.togglePencil( cell: cell, index: index )
+        }
+    }
+    
     func handleKeyEvent( event: NSEvent ) -> NSEvent? {
         if event.modifierFlags.contains( .command ) { return event }
         if event.modifierFlags.contains( .option ) { return event }
@@ -153,35 +177,20 @@ final class SudokuDocument: ReferenceFileDocument {
         if let index = levelInfo.index( from: character ) {
             guard let selection = selection else { return event }
             if !event.modifierFlags.contains( .control ) {
-                let oldValue = selection.solved
-                if oldValue != index {
-                    undoManager?.registerUndo( withTarget: self ) { document in
-                        document.selection = selection
-                        selection.solved = oldValue
-                        document.undoManager?.registerUndo( withTarget: document ) { document in
-                            document.selection = selection
-                            selection.solved = index
-                            document.moveRight()
-                        }
-                    }
-                }
-                selection.solved = index
                 moveRight()
+                setSolved( cell: selection, newIndex: index, endCell: self.selection!, undoCell: selection )
                 return nil
             } else {
                 if selection.solved != nil { return event }
-                if !selection.penciled.insert( index ).inserted {
-                    selection.penciled.remove( index )
-                }
-                penciledCount = puzzle.penciledCount
+                togglePencil( cell: selection, index: index )
                 return nil
             }
         }
         
         if character == "." || character == " " {
             guard let selection = selection else { return event }
-            selection.solved = nil
             moveRight()
+            setSolved( cell: selection, newIndex: nil, endCell: self.selection!, undoCell: selection )
             return nil
         }
         
@@ -194,12 +203,12 @@ final class SudokuDocument: ReferenceFileDocument {
         case NSEvent.SpecialKey.backspace, NSEvent.SpecialKey.delete:
             guard let selection = selection else { return event }
             moveLeft()
-            selection.solved = nil
+            setSolved( cell: self.selection!, newIndex: nil, endCell: self.selection!, undoCell: selection )
             return nil
         case NSEvent.SpecialKey.deleteForward:
             guard let selection = selection else { return event }
-            selection.solved = nil
             moveRight()
+            setSolved( cell: selection, newIndex: nil, endCell: self.selection!, undoCell: selection )
             return nil
         case NSEvent.SpecialKey.tab:
             guard let selection = selection else { moveTo( row: 0, col: 0 ); return nil }
