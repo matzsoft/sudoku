@@ -8,14 +8,22 @@
 import SwiftUI
 
 struct ContentView: View {
+    enum AudioVerifyType: String, CaseIterable {
+        case fromBeginning, fromSelection
+    }
+    
     @Environment( \.undoManager ) var undoManager
     @ObservedObject var document: SudokuDocument
+    @State private var audioVerifyType: AudioVerifyType = .fromBeginning
 
     var body: some View {
         document.undoManager = undoManager
         return PuzzleView( document: document )
             .toolbar {
                 ToolbarItemGroup( placement: .automatic ) {
+                    Button( action: document.audioVerify ) {
+                        Label( "Audio Verify", systemImage: "speaker.wave.3" )
+                    }
                     if let undoManager = undoManager {
                         Button( action: undoManager.undo ) {
                             Label( "Undo", systemImage: "arrow.uturn.backward" )

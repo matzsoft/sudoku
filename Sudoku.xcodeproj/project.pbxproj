@@ -151,7 +151,6 @@
 		DD52AC4228D7FFD70063F450 /* SudokuPuzzle */ = {
 			isa = PBXGroup;
 			children = (
-				DD52AC3A28D7FF960063F450 /* AudioVerify.swift */,
 				DD52AC3828D7FF960063F450 /* Cell.swift */,
 				DD52AC3C28D7FF960063F450 /* Level.swift */,
 				DD52AC3B28D7FF960063F450 /* SudokuPuzzle.swift */,
@@ -162,6 +161,7 @@
 		DD52AC4328D840AA0063F450 /* SudokuDocument */ = {
 			isa = PBXGroup;
 			children = (
+				DD52AC3A28D7FF960063F450 /* AudioVerify.swift */,
 				DD52AC3928D7FF960063F450 /* Drawer.swift */,
 				DD52AC0C28D7FA850063F450 /* SudokuDocument.swift */,
 			);

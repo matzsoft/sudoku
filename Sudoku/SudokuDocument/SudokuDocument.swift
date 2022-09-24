@@ -14,7 +14,11 @@ final class SudokuDocument: ReferenceFileDocument {
     var puzzle:      SudokuPuzzle
     var drawer:      Drawer
     var undoManager: UndoManager?
-
+    var isSpeaking = false
+    var speechQueue: [ SpeechCommand ] = []
+    var speechDelegate: SpeechDelegate?
+    lazy var synthesizer: NSSpeechSynthesizer = getSynthesizer
+    
     @Published var selection: SudokuPuzzle.Cell?
     @Published var penciledCount = 0
     
@@ -195,9 +199,9 @@ final class SudokuDocument: ReferenceFileDocument {
         }
         
         // This handles escape
-        //            if event.keyCode == 53 {
-        //                if stopSpeaking() { return nil }
-        //            }
+        if event.keyCode == 53 {
+            if stopSpeaking() { return nil }
+        }
         
         switch event.specialKey {
         case NSEvent.SpecialKey.backspace, NSEvent.SpecialKey.delete:

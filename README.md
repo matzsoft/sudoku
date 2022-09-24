@@ -12,13 +12,12 @@ Still in early development.
 1. Save an edited file to disk.
 1. The document is marked edited when changes are made.
 1. Undo/redo is working properly.
+1. Speech verification of puzzles, including abort.
 
 ## TODO List
 For now, in no particular order, this is a list of things needed.
 
 1. When an edited document is closed it is saved, but without a confirmation dialog.
-1. Speech verification of puzzles, including abort.
-1. Need to disable the Audio Verify menu item when no puzzles are open.
 1. Have a way for Audio verify to start from the selection.
 1. I would like Cell and Drawer to know what SudokuPuzzle they belong to without sacrificing immutability.
 1. Allow graphics files as input, converting them to puzzles.
