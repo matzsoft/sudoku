@@ -103,21 +103,6 @@ final class SudokuDocument: ReferenceFileDocument {
         return true
     }
     
-    func moveCommand( direction: MoveCommandDirection ) -> Void {
-        switch direction {
-        case .up:
-            moveUp()
-        case .down:
-            moveDown()
-        case .left:
-            moveLeft()
-        case .right:
-            moveRight()
-        @unknown default:
-            NSSound.beep()
-        }
-    }
-
     func moveUp() -> Void {
         let limit = levelInfo.limit
         guard let selection = selection else { moveTo( row: limit - 1, col: limit - 1 ); return }
@@ -168,89 +153,5 @@ final class SudokuDocument: ReferenceFileDocument {
         undoManager?.registerUndo( withTarget: self ) { document in
             document.togglePencil( cell: cell, index: index )
         }
-    }
-    
-    func handleKeyEvent( event: NSEvent ) -> NSEvent? {
-        if event.modifierFlags.contains( .command ) { return event }
-        if event.modifierFlags.contains( .option ) { return event }
-        guard let characters = event.charactersIgnoringModifiers else { return event }
-        guard characters.count == 1 else { return event }
-
-        let character = characters.uppercased().first!
-        
-        if let index = levelInfo.index( from: character ) {
-            guard let selection = selection else { return event }
-            if !event.modifierFlags.contains( .control ) {
-                moveRight()
-                setSolved( cell: selection, newIndex: index, endCell: self.selection!, undoCell: selection )
-                return nil
-            } else {
-                if selection.solved != nil { return event }
-                togglePencil( cell: selection, index: index )
-                return nil
-            }
-        }
-        
-        if character == "." || character == " " {
-            guard let selection = selection else { return event }
-            moveRight()
-            setSolved( cell: selection, newIndex: nil, endCell: self.selection!, undoCell: selection )
-            return nil
-        }
-        
-        // This handles escape
-        if event.keyCode == 53 {
-            if stopSpeaking() { return nil }
-        }
-        
-        switch event.specialKey {
-        case NSEvent.SpecialKey.backspace, NSEvent.SpecialKey.delete:
-            guard let selection = selection else { return event }
-            moveLeft()
-            setSolved( cell: self.selection!, newIndex: nil, endCell: self.selection!, undoCell: selection )
-            return nil
-        case NSEvent.SpecialKey.deleteForward:
-            guard let selection = selection else { return event }
-            moveRight()
-            setSolved( cell: selection, newIndex: nil, endCell: self.selection!, undoCell: selection )
-            return nil
-        case NSEvent.SpecialKey.tab:
-            guard let selection = selection else { moveTo( row: 0, col: 0 ); return nil }
-            let newCol = ( selection.col + levelInfo.level ) / levelInfo.level * levelInfo.level
-            if !moveTo( row: selection.row, col: newCol ) {
-                moveTo( row: selection.row, col: 0 )
-                moveDown()
-            }
-            return nil
-        case NSEvent.SpecialKey.backTab:
-            guard let selection = selection else {
-                moveTo( row: levelInfo.limit - 1, col: levelInfo.limit - levelInfo.level )
-                return nil
-            }
-            if selection.col > 0 {
-                let newCol = ( selection.col - 1 ) / levelInfo.level * levelInfo.level
-                moveTo( row: selection.row, col: newCol )
-            } else {
-                moveTo( row: selection.row, col: levelInfo.limit - levelInfo.level )
-                moveUp()
-            }
-            return nil
-        case NSEvent.SpecialKey.carriageReturn, NSEvent.SpecialKey.newline, NSEvent.SpecialKey.enter:
-            guard let selection = selection else { moveTo( row: 0, col: 0 ); return nil }
-            moveTo( row: selection.row, col: 0 )
-            moveDown()
-            return nil
-        case NSEvent.SpecialKey.home:
-            moveTo( row: 0, col: 0 )
-            return nil
-        case NSEvent.SpecialKey.end:
-            let limit = levelInfo.limit
-            moveTo( row: limit - 1, col: limit - 1 )
-            return nil
-        default:
-            break
-        }
-
-        return event
     }
 }

@@ -43,8 +43,6 @@ struct ContentView: View {
 struct PuzzleView: View {
     @ObservedObject var document: SudokuDocument
     @State private var needsLevel = true
-    @State private var keyDownMonitor: Any?
-    @State private var window: NSWindow?
 
     var body: some View {
         VStack( alignment: .leading, spacing: 0 ) {
@@ -62,7 +60,7 @@ struct PuzzleView: View {
             HorizontalLine( document: document, row: 0 )
         }
         .padding()
-        .background( WindowAccessor( window: $window ) )
+        .background( KeyDownTracker( document: document ) )
         .background( LinearGradient(
             gradient: Gradient(
                 colors: [ .blue.opacity( 0.25 ), .cyan.opacity( 0.25 ), .green.opacity( 0.25 ) ]
@@ -82,16 +80,6 @@ struct PuzzleView: View {
         .focusable()
         .onAppear() {
             needsLevel = document.needsLevel
-            keyDownMonitor = NSEvent.addLocalMonitorForEvents( matching: [.keyDown] ) { event in
-                guard event.window == window else { return event }
-                return document.handleKeyEvent( event: event )
-            }
-        }
-        .onDisappear() {
-            NSEvent.removeMonitor( keyDownMonitor! )
-        }
-        .onMoveCommand { direction in
-            document.moveCommand( direction: direction )
         }
     }
 }
@@ -124,19 +112,4 @@ struct VerticalLine: View {
             .fill( .black )
             .frame( width: document.dividerWidth( col: col ), height: document.cellSize )
     }
-}
-
-
-struct WindowAccessor: NSViewRepresentable {
-    @Binding var window: NSWindow?
-    
-    func makeNSView( context: Context ) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async {
-            self.window = view.window
-        }
-        return view
-    }
-    
-    func updateNSView( _ nsView: NSView, context: Context ) {}
 }
