@@ -41,9 +41,11 @@ struct ContentView: View {
 }
 
 struct PuzzleView: View {
+    @Environment( \.dismiss ) var dismiss
     @ObservedObject var document: SudokuDocument
-    @State private var needsLevel = true
     @FocusState private var focused: Bool
+    @State private var needsLevel = true
+    @State private var window: NSWindow?
 
     var body: some View {
         focused = true
@@ -66,6 +68,7 @@ struct PuzzleView: View {
                 .focused( $focused )
         }
         .padding()
+        .background( WindowAccessor( window: $window ) )
         .background( LinearGradient(
             gradient: Gradient(
                 colors: [ .blue.opacity( 0.25 ), .cyan.opacity( 0.25 ), .green.opacity( 0.25 ) ]
@@ -78,6 +81,7 @@ struct PuzzleView: View {
             ForEach( SudokuPuzzle.supportedLevels, id: \.self ) { levelInfo in
                 Button( levelInfo.label ) { document.levelInfo = levelInfo; needsLevel = false }
             }
+            Button( "Cancel", role: .cancel, action: { dismiss(); window?.close() } )
         }
         message: {
             Text( "Select your puzzle size" )
@@ -116,4 +120,19 @@ struct VerticalLine: View {
             .fill( .black )
             .frame( width: document.dividerWidth( col: col ), height: document.cellSize )
     }
+}
+
+
+struct WindowAccessor: NSViewRepresentable {
+    @Binding var window: NSWindow?
+    
+    func makeNSView( context: Context ) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            self.window = view.window
+        }
+        return view
+    }
+    
+    func updateNSView( _ nsView: NSView, context: Context ) {}
 }
