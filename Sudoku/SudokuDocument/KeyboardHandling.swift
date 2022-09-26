@@ -16,6 +16,9 @@ extension SudokuDocument {
         func makeNSView( context: Context ) -> NSView {
             let view = KeyDownView( document: document )
 
+            DispatchQueue.main.async { // wait till next event cycle
+                view.window?.makeFirstResponder( view )
+            }
             return view
         }
         

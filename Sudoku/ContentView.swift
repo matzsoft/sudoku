@@ -43,14 +43,11 @@ struct ContentView: View {
 struct PuzzleView: View {
     @Environment( \.dismiss ) var dismiss
     @ObservedObject var document: SudokuDocument
-    @FocusState private var focused: Bool
     @State private var needsLevel = true
     @State private var window: NSWindow?
 
     var body: some View {
-        focused = true
-
-        return VStack( alignment: .leading, spacing: 0 ) {
+        VStack( alignment: .leading, spacing: 0 ) {
             ForEach( document.rows ) { row in
                 HorizontalLine( document: document, row: row[0].row )
                 HStack( alignment: .top, spacing: 0 ) {
@@ -65,7 +62,6 @@ struct PuzzleView: View {
             HorizontalLine( document: document, row: 0 )
             SudokuDocument.KeyDownTracker( document: document )
                 .frame( maxWidth: 0, maxHeight: 0 )
-                .focused( $focused )
         }
         .padding()
         .background( WindowAccessor( window: $window ) )
