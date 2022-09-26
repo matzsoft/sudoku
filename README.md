@@ -17,6 +17,8 @@ Still in early development.
 ## TODO List
 For now, in no particular order, this is a list of things needed.
 
+1. The PuzzleView does not have the focus when the document is first opened.
+1. The confirmation dialog for a new file does not close the window when cancel is chosen.
 1. When an edited document is closed it is saved, but without a confirmation dialog.
 1. Have a way for Audio verify to start from the selection.
 1. I would like Cell and Drawer to know what SudokuPuzzle they belong to without sacrificing immutability.
