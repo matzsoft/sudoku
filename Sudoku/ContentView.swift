@@ -43,9 +43,11 @@ struct ContentView: View {
 struct PuzzleView: View {
     @ObservedObject var document: SudokuDocument
     @State private var needsLevel = true
+    @FocusState private var focused: Bool
 
     var body: some View {
-        VStack( alignment: .leading, spacing: 0 ) {
+        focused = true
+        return VStack( alignment: .leading, spacing: 0 ) {
             ForEach( document.rows ) { row in
                 HorizontalLine( document: document, row: row[0].row )
                 HStack( alignment: .top, spacing: 0 ) {
@@ -58,9 +60,11 @@ struct PuzzleView: View {
                 }
             }
             HorizontalLine( document: document, row: 0 )
+            KeyDownTracker( document: document )
+                .frame( maxWidth: 0, maxHeight: 0 )
+                .focused( $focused )
         }
         .padding()
-        .background( KeyDownTracker( document: document ) )
         .background( LinearGradient(
             gradient: Gradient(
                 colors: [ .blue.opacity( 0.25 ), .cyan.opacity( 0.25 ), .green.opacity( 0.25 ) ]
