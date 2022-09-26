@@ -47,6 +47,7 @@ struct PuzzleView: View {
 
     var body: some View {
         focused = true
+
         return VStack( alignment: .leading, spacing: 0 ) {
             ForEach( document.rows ) { row in
                 HorizontalLine( document: document, row: row[0].row )
@@ -60,7 +61,7 @@ struct PuzzleView: View {
                 }
             }
             HorizontalLine( document: document, row: 0 )
-            KeyDownTracker( document: document )
+            SudokuDocument.KeyDownTracker( document: document )
                 .frame( maxWidth: 0, maxHeight: 0 )
                 .focused( $focused )
         }
@@ -81,7 +82,6 @@ struct PuzzleView: View {
         message: {
             Text( "Select your puzzle size" )
         }
-        .focusable()
         .onAppear() {
             needsLevel = document.needsLevel
         }

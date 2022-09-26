@@ -9,106 +9,105 @@ import Foundation
 import SwiftUI
 import AppKit
 
-struct KeyDownTracker: NSViewRepresentable {
-    var document: SudokuDocument
-    
-    func makeNSView( context: Context ) -> NSView {
-        let view = KeyDownView( document: document )
-
-        return view
-    }
-    
-    func updateNSView( _ nsView: NSView, context: Context ) {}
-}
-
-class KeyDownView: NSView {
-    let document: SudokuDocument
-    
-    internal init( document: SudokuDocument ) {
-        self.document = document
-        super.init( frame: NSRect.zero )
-    }
-    
-    required init?( coder: NSCoder ) {
-        fatalError( "init(coder:) has not been implemented" )
-    }
-    
-    override var acceptsFirstResponder: Bool { return true }
-    
-    override func keyDown( with event: NSEvent ) {
-        if !document.handleControl( event: event ) {
-            interpretKeyEvents( [ event ] )
-        }
-    }
-    
-    override func insertText(_ insertString: Any) {
-        guard let string = insertString as? String else { NSSound.beep(); return }
-        guard string.count == 1 else { NSSound.beep(); return }
-
-        if !document.insertText( character: string.uppercased().first! ) {
-            NSSound.beep()
-        }
-    }
-    
-    #if false
-    // Enable this to see what commands are produced by each key press.
-    override func doCommand( by selector: Selector ) {
-        Swift.print( "Got command = '\(selector)'" )
-        super.doCommand( by: selector )
-    }
-    #endif
-    
-    override func moveLeft(_ sender: Any?) {
-        document.moveLeft()
-    }
-    
-    override func moveRight(_ sender: Any?) {
-        document.moveRight()
-    }
-    
-    override func moveUp(_ sender: Any?) {
-        document.moveUp()
-    }
-    
-    override func moveDown(_ sender: Any?) {
-        document.moveDown()
-    }
-    
-    override func scrollToBeginningOfDocument(_ sender: Any?) {
-        document.processHome()
-    }
-    
-    override func scrollToEndOfDocument(_ sender: Any?) {
-        document.processEnd()
-    }
-    
-    override func deleteBackward(_ sender: Any?) {
-        if !document.processDeleteBackward() { NSSound.beep() }
-    }
-    
-    override func deleteForward(_ sender: Any?) {
-        if !document.processDeleteForward() { NSSound.beep() }
-    }
-    
-    override func insertBacktab(_ sender: Any?) {
-        document.processBackTab()
-    }
-    
-    override func insertTab(_ sender: Any?) {
-        document.processTab()
-    }
-    
-    override func insertNewline(_ sender: Any?) {
-        document.processNewLine()
-    }
-    
-    override func cancelOperation(_ sender: Any?) {
-        if !document.processCancel() { NSSound.beep() }
-    }
-}
-
-
 extension SudokuDocument {
+    struct KeyDownTracker: NSViewRepresentable {
+        var document: SudokuDocument
+        
+        func makeNSView( context: Context ) -> NSView {
+            let view = KeyDownView( document: document )
+
+            return view
+        }
+        
+        func updateNSView( _ nsView: NSView, context: Context ) {}
+    }
+
+    class KeyDownView: NSView {
+        let document: SudokuDocument
+        
+        internal init( document: SudokuDocument ) {
+            self.document = document
+            super.init( frame: NSRect.zero )
+        }
+        
+        required init?( coder: NSCoder ) {
+            fatalError( "init(coder:) has not been implemented" )
+        }
+        
+        override var acceptsFirstResponder: Bool { return true }
+        
+        override func keyDown( with event: NSEvent ) {
+            if !document.handleControl( event: event ) {
+                interpretKeyEvents( [ event ] )
+            }
+        }
+        
+        override func insertText(_ insertString: Any) {
+            guard let string = insertString as? String else { NSSound.beep(); return }
+            guard string.count == 1 else { NSSound.beep(); return }
+
+            if !document.insertText( character: string.uppercased().first! ) {
+                NSSound.beep()
+            }
+        }
+        
+        #if false
+        // Enable this to see what commands are produced by each key press.
+        override func doCommand( by selector: Selector ) {
+            Swift.print( "Got command = '\(selector)'" )
+            super.doCommand( by: selector )
+        }
+        #endif
+        
+        override func moveLeft(_ sender: Any?) {
+            document.moveLeft()
+        }
+        
+        override func moveRight(_ sender: Any?) {
+            document.moveRight()
+        }
+        
+        override func moveUp(_ sender: Any?) {
+            document.moveUp()
+        }
+        
+        override func moveDown(_ sender: Any?) {
+            document.moveDown()
+        }
+        
+        override func scrollToBeginningOfDocument(_ sender: Any?) {
+            document.processHome()
+        }
+        
+        override func scrollToEndOfDocument(_ sender: Any?) {
+            document.processEnd()
+        }
+        
+        override func deleteBackward(_ sender: Any?) {
+            if !document.processDeleteBackward() { NSSound.beep() }
+        }
+        
+        override func deleteForward(_ sender: Any?) {
+            if !document.processDeleteForward() { NSSound.beep() }
+        }
+        
+        override func insertBacktab(_ sender: Any?) {
+            document.processBackTab()
+        }
+        
+        override func insertTab(_ sender: Any?) {
+            document.processTab()
+        }
+        
+        override func insertNewline(_ sender: Any?) {
+            document.processNewLine()
+        }
+        
+        override func cancelOperation(_ sender: Any?) {
+            if !document.processCancel() { NSSound.beep() }
+        }
+    }
+
     func insertText( character: Character ) -> Bool {
         guard let selection = selection else { return false }
         if let index = levelInfo.index( from: character ) {
