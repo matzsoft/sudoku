@@ -47,6 +47,13 @@ struct ContentView: View {
 }
 
 
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView( document: SudokuDocument() )
+    }
+}
+
+
 struct ControlView: View {
     @Binding var audioVerifyType: AudioVerifyType
     
@@ -86,8 +93,7 @@ struct PuzzleView: View {
                 }
             }
             HorizontalLine( document: document, row: 0 )
-            SudokuDocument.KeyDownTracker( document: document )
-                .frame( maxWidth: 0, maxHeight: 0 )
+            KeyDownTracker( document: document )
         }
         .padding()
         .background( WindowAccessor( window: $window ) )
@@ -111,12 +117,6 @@ struct PuzzleView: View {
         .onAppear() {
             needsLevel = document.needsLevel
         }
-    }
-}
-
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView( document: SudokuDocument() )
     }
 }
 
@@ -157,4 +157,14 @@ struct WindowAccessor: NSViewRepresentable {
     }
     
     func updateNSView( _ nsView: NSView, context: Context ) {}
+}
+
+
+struct KeyDownTracker: View {
+    var document: SudokuDocument
+    
+    var body: some View {
+        SudokuDocument.KeyDownTracker( document: document )
+            .frame( maxWidth: 0, maxHeight: 0 )
+    }
 }

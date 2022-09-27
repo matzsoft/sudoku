@@ -17,7 +17,6 @@ Still in early development.
 ## TODO List
 For now, in no particular order, this is a list of things needed.
 
-1. Can I move the KeyTracker modifiers into the KeyTracker definition?
 1. When an edited document is closed it is saved, but without a confirmation dialog.
 1. I would like Cell and Drawer to know what SudokuPuzzle they belong to without sacrificing immutability.
 1. Allow graphics files as input, converting them to puzzles.
