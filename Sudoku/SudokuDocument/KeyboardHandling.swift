@@ -45,7 +45,7 @@ extension SudokuDocument {
             }
         }
         
-        override func insertText(_ insertString: Any) {
+        override func insertText( _ insertString: Any ) {
             guard let string = insertString as? String else { NSSound.beep(); return }
             guard string.count == 1 else { NSSound.beep(); return }
 
@@ -62,51 +62,23 @@ extension SudokuDocument {
         }
         #endif
         
-        override func moveLeft(_ sender: Any?) {
-            document.moveLeft()
-        }
-        
-        override func moveRight(_ sender: Any?) {
-            document.moveRight()
-        }
-        
-        override func moveUp(_ sender: Any?) {
-            document.moveUp()
-        }
-        
-        override func moveDown(_ sender: Any?) {
-            document.moveDown()
-        }
-        
-        override func scrollToBeginningOfDocument(_ sender: Any?) {
-            document.processHome()
-        }
-        
-        override func scrollToEndOfDocument(_ sender: Any?) {
-            document.processEnd()
-        }
-        
-        override func deleteBackward(_ sender: Any?) {
+        override func moveLeft( _ sender: Any? )                    { document.moveLeft() }
+        override func moveRight( _ sender: Any? )                   { document.moveRight() }
+        override func moveUp( _ sender: Any? )                      { document.moveUp() }
+        override func moveDown( _ sender: Any? )                    { document.moveDown() }
+        override func scrollToBeginningOfDocument( _ sender: Any? ) { document.processHome() }
+        override func scrollToEndOfDocument( _ sender: Any? )       { document.processEnd() }
+        override func insertBacktab( _ sender: Any? )               { document.processBackTab() }
+        override func insertTab( _ sender: Any? )                   { document.processTab() }
+        override func insertNewline( _ sender: Any? )               { document.processNewLine() }
+
+        override func deleteBackward( _ sender: Any? ) {
             if !document.processDeleteBackward() { NSSound.beep() }
         }
-        
-        override func deleteForward(_ sender: Any?) {
+        override func deleteForward( _ sender: Any? ) {
             if !document.processDeleteForward() { NSSound.beep() }
         }
-        
-        override func insertBacktab(_ sender: Any?) {
-            document.processBackTab()
-        }
-        
-        override func insertTab(_ sender: Any?) {
-            document.processTab()
-        }
-        
-        override func insertNewline(_ sender: Any?) {
-            document.processNewLine()
-        }
-        
-        override func cancelOperation(_ sender: Any?) {
+        override func cancelOperation( _ sender: Any? ) {
             if !document.processCancel() { NSSound.beep() }
         }
     }
@@ -120,9 +92,7 @@ extension SudokuDocument {
         }
 
         if character == "." || character == " " {
-            moveRight()
-            setSolved( cell: selection, newIndex: nil, endCell: self.selection!, undoCell: selection )
-            return true
+            return processDeleteForward()
         }
         
         return false
