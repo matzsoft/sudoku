@@ -7,21 +7,22 @@
 
 import SwiftUI
 
-enum AudioVerifyType: String, CaseIterable {
-    case fromBeginning, fromSelection
-}
+enum DocumentMode:    String, CaseIterable { case editing, solving }
+enum AudioVerifyType: String, CaseIterable { case fromBeginning, fromSelection }
 
 struct ContentView: View {
     @Environment( \.undoManager ) var undoManager
     @ObservedObject var document: SudokuDocument
+    @State private var documentMode: DocumentMode = .editing
     @State private var audioVerifyType: AudioVerifyType = .fromBeginning
 
     var body: some View {
         document.undoManager = undoManager
         
         return HSplitView {
-            ControlView( audioVerifyType: $audioVerifyType )
-                .frame( minWidth: 200 )
+            ControlView( documentMode: $documentMode, audioVerifyType: $audioVerifyType )
+                .frame( minWidth: 200, maxWidth: 200 )
+                .padding()
             PuzzleView( document: document )
                 .fixedSize()
                 .toolbar {
@@ -43,6 +44,14 @@ struct ContentView: View {
                     }
                 }
         }
+        .background( LinearGradient(
+            gradient: Gradient(
+                colors: [ .blue.opacity( 0.25 ), .cyan.opacity( 0.25 ), .green.opacity( 0.25 ) ]
+            ),
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+            )
+        )
     }
 }
 
@@ -55,20 +64,31 @@ struct ContentView_Previews: PreviewProvider {
 
 
 struct ControlView: View {
+    @Binding var documentMode: DocumentMode
     @Binding var audioVerifyType: AudioVerifyType
     
     var body: some View {
-        VStack( alignment: .leading, spacing: 0 ) {
+        VStack( alignment: .leading, spacing: 10 ) {
+            Label( "Mode", systemImage: "filemenu.and.selection" )
+            Picker( "", selection: $documentMode ) {
+                Text( "Editing" ).tag( DocumentMode.editing )
+                Text( "Solving" ).tag( DocumentMode.solving )
+            }.pickerStyle( RadioGroupPickerStyle() )
+            Divider()
             Label( "Start Audio Verify From", systemImage: "speaker" )
-            Rectangle()
-                .fill( .clear )
-                .frame( width: 10, height: 10 )
             Picker( "", selection: $audioVerifyType ) {
                 Text( "Beginning" ).tag( AudioVerifyType.fromBeginning )
                 Text( "Selection" ).tag( AudioVerifyType.fromSelection )
             }.pickerStyle( RadioGroupPickerStyle() )
+            Divider()
+            Label( "Verify", systemImage: "checkmark.shield" )
+            Button( "Check Conflicts" ) {}
+            Button( "Check Validity" ) {}
+            Button( "Show Solution" ) {}
         }
         .padding()
+        .background( Color( red: 241 / 255, green: 241 / 255, blue: 241 / 255 ) )
+        .cornerRadius( 15 )
     }
 }
 
@@ -97,14 +117,6 @@ struct PuzzleView: View {
         }
         .padding()
         .background( WindowAccessor( window: $window ) )
-        .background( LinearGradient(
-            gradient: Gradient(
-                colors: [ .blue.opacity( 0.25 ), .cyan.opacity( 0.25 ), .green.opacity( 0.25 ) ]
-            ),
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-            )
-        )
         .confirmationDialog( "Puzzle Level", isPresented: $needsLevel ) {
             ForEach( SudokuPuzzle.supportedLevels, id: \.self ) { levelInfo in
                 Button( levelInfo.label ) { document.levelInfo = levelInfo; needsLevel = false }
