@@ -67,9 +67,9 @@ extension SudokuDocument {
         return synthesizer
     }
     
-    func audioVerify() {
+    func audioVerify( type: AudioVerifyType ) {
         if speechQueue.isEmpty {
-            speechQueue = fillSpeechQueue()
+            speechQueue = fillSpeechQueue( type: type )
         }
         isSpeaking = true
         
@@ -82,16 +82,24 @@ extension SudokuDocument {
         let wasSpeaking = isSpeaking
         
         isSpeaking = false
+        speechQueue = []
         return wasSpeaking
     }
 
-    func fillSpeechQueue() -> [ SpeechCommand ] {
+    func fillSpeechQueue( type: AudioVerifyType ) -> [ SpeechCommand ] {
         var commands: [ SpeechCommand ] = []
         
         if rows.isEmpty {
             commands.append( SpeechCommand( row: 0, col: 0, string: "Puzzle is empty." ) )
         } else {
-            for col in 0 ..< rows[0].count {
+            var startCol = 0
+            
+            if type == .fromSelection {
+                guard let selection = selection else { NSSound.beep(); return [] }
+                startCol = selection.col
+            }
+
+            for col in startCol ..< rows[0].count {
                 commands.append( SpeechCommand( row: 0, col: col, string: "Column \(col+1)." ) )
                 for row in 0 ..< rows.count {
                     let cell = rows[row][col]

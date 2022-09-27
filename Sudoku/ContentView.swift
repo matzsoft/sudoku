@@ -7,38 +7,64 @@
 
 import SwiftUI
 
+enum AudioVerifyType: String, CaseIterable {
+    case fromBeginning, fromSelection
+}
+
 struct ContentView: View {
-    enum AudioVerifyType: String, CaseIterable {
-        case fromBeginning, fromSelection
-    }
-    
     @Environment( \.undoManager ) var undoManager
     @ObservedObject var document: SudokuDocument
     @State private var audioVerifyType: AudioVerifyType = .fromBeginning
 
     var body: some View {
         document.undoManager = undoManager
-        return PuzzleView( document: document )
-            .toolbar {
-                ToolbarItemGroup( placement: .automatic ) {
-                    Button( action: document.audioVerify ) {
-                        Label( "Audio Verify", systemImage: "speaker.wave.3" )
-                    }
-                    if let undoManager = undoManager {
-                        Button( action: undoManager.undo ) {
-                            Label( "Undo", systemImage: "arrow.uturn.backward" )
-                        }
-                        .disabled( !undoManager.canUndo )
+        
+        return HSplitView {
+            ControlView( audioVerifyType: $audioVerifyType )
+                .frame( minWidth: 200 )
+            PuzzleView( document: document )
+                .fixedSize()
+                .toolbar {
+                    ToolbarItemGroup( placement: .automatic ) {
+                        Button( action: { document.audioVerify( type: audioVerifyType ) } ) {
+                            Label( "Audio Verify", systemImage: "speaker.wave.3" )
+                        }.disabled( document.isSpeaking )
+                        if let undoManager = undoManager {
+                            Button( action: undoManager.undo ) {
+                                Label( "Undo", systemImage: "arrow.uturn.backward" )
+                            }
+                            .disabled( !undoManager.canUndo )
 
-                        Button( action: undoManager.redo ) {
-                            Label( "Redo", systemImage: "arrow.uturn.forward" )
+                            Button( action: undoManager.redo ) {
+                                Label( "Redo", systemImage: "arrow.uturn.forward" )
+                            }
+                            .disabled( !undoManager.canRedo )
                         }
-                        .disabled( !undoManager.canRedo )
                     }
                 }
-            }
+        }
     }
 }
+
+
+struct ControlView: View {
+    @Binding var audioVerifyType: AudioVerifyType
+    
+    var body: some View {
+        VStack( alignment: .leading, spacing: 0 ) {
+            Label( "Start Audio Verify From", systemImage: "speaker" )
+            Rectangle()
+                .fill( .clear )
+                .frame( width: 10, height: 10 )
+            Picker( "", selection: $audioVerifyType ) {
+                Text( "Beginning" ).tag( AudioVerifyType.fromBeginning )
+                Text( "Selection" ).tag( AudioVerifyType.fromSelection )
+            }.pickerStyle( RadioGroupPickerStyle() )
+        }
+        .padding()
+    }
+}
+
 
 struct PuzzleView: View {
     @Environment( \.dismiss ) var dismiss
