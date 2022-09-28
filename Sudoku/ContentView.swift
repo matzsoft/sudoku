@@ -107,7 +107,11 @@ struct ControlView: View {
             .alert( "Puzzle is \(isValid ? "" : "not ")solvable.", isPresented: $showingValidityAlert ) {
                 Button( "OK", role: .cancel ) { }
             }
-            Button( "Show Solution" ) { document.showSolution() }
+            if !document.isShowingSolution {
+                Button( "Show Solution" ) { document.showSolution() }
+            } else {
+                Button( "Hide Solution" ) { document.hideSolution() }
+            }
         }
         .padding()
         .background( Color( red: 241 / 255, green: 241 / 255, blue: 241 / 255 ) )

@@ -13,8 +13,9 @@ final class SudokuDocument: ReferenceFileDocument {
     
     var puzzle:      SudokuPuzzle
     var drawer:      Drawer
-    var solver:      SudokuPuzzle.Solver
     var undoManager: UndoManager?
+    var solver:      SudokuPuzzle.Solver
+    var isShowingSolution = false
     var isSpeaking = false
     var speechQueue: [ SpeechCommand ] = []
     var speechDelegate: SpeechDelegate?
@@ -30,9 +31,9 @@ final class SudokuDocument: ReferenceFileDocument {
             drawer = Drawer( levelInfo: newValue )
         }
     }
+    var rows: [[SudokuPuzzle.Cell]] { isShowingSolution ? solver.puzzle.grid : puzzle.grid }
     var needsLevel: Bool { puzzle.levelInfo.level == SudokuPuzzle.empty.level }
     var levelDescription: String { levelInfo.label }
-    var rows: [[SudokuPuzzle.Cell]] { puzzle.grid }
     var puzzleSize: CGFloat { drawer.puzzleSize }
     var cellSize: CGFloat { drawer.cellSize }
 
@@ -172,7 +173,12 @@ final class SudokuDocument: ReferenceFileDocument {
     func showSolution() -> Void {
         solver = SudokuPuzzle.Solver( puzzle: puzzle )
         solver.solve()
-        ( puzzle, solver.puzzle ) = ( solver.puzzle, puzzle )
+        isShowingSolution = true
+        updateCount += 1
+    }
+    
+    func hideSolution() -> Void {
+        isShowingSolution = false
         updateCount += 1
     }
 }

@@ -84,6 +84,7 @@ extension SudokuDocument {
     }
 
     func insertText( character: Character ) -> Bool {
+        if isShowingSolution { return false }
         guard let selection = selection else { return false }
         if let index = levelInfo.index( from: character ) {
             moveRight()
@@ -99,6 +100,7 @@ extension SudokuDocument {
     }
     
     func handleControl( event: NSEvent ) -> Bool {
+        if isShowingSolution { return false }
         guard let selection = selection else { return false }
         guard selection.solved == nil else { return false }
         guard event.modifierFlags.contains( .control ) else { return false }
@@ -138,6 +140,7 @@ extension SudokuDocument {
     }
     
     func processDeleteBackward() -> Bool {
+        if isShowingSolution { return false }
         guard let selection = selection else { return false }
         moveLeft()
         setSolved( cell: self.selection!, newIndex: nil, endCell: self.selection!, undoCell: selection )
@@ -145,6 +148,7 @@ extension SudokuDocument {
     }
     
     func processDeleteForward() -> Bool {
+        if isShowingSolution { return false }
         guard let selection = selection else { return false }
         moveRight()
         setSolved( cell: selection, newIndex: nil, endCell: self.selection!, undoCell: selection )
@@ -158,7 +162,8 @@ extension SudokuDocument {
     }
     
     func processCancel() -> Bool {
-        stopSpeaking()
+        if isShowingSolution { return false }
+        return stopSpeaking()
     }
     
     func processHome() -> Void {
