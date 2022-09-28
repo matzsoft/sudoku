@@ -21,6 +21,7 @@
 		DD52AC4028D7FF960063F450 /* SudokuPuzzle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD52AC3B28D7FF960063F450 /* SudokuPuzzle.swift */; };
 		DD52AC4128D7FF960063F450 /* Level.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD52AC3C28D7FF960063F450 /* Level.swift */; };
 		DD52AC4528D8F0630063F450 /* KeyboardHandling.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD52AC4428D8F0630063F450 /* KeyboardHandling.swift */; };
+		DDC6F7CC28E3F3C1001CB49E /* Solver.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDC6F7CB28E3F3C1001CB49E /* Solver.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,6 +61,7 @@
 		DD52AC3B28D7FF960063F450 /* SudokuPuzzle.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SudokuPuzzle.swift; sourceTree = "<group>"; };
 		DD52AC3C28D7FF960063F450 /* Level.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Level.swift; sourceTree = "<group>"; };
 		DD52AC4428D8F0630063F450 /* KeyboardHandling.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardHandling.swift; sourceTree = "<group>"; };
+		DDC6F7CB28E3F3C1001CB49E /* Solver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Solver.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -152,6 +154,7 @@
 			children = (
 				DD52AC3828D7FF960063F450 /* Cell.swift */,
 				DD52AC3C28D7FF960063F450 /* Level.swift */,
+				DDC6F7CB28E3F3C1001CB49E /* Solver.swift */,
 				DD52AC3B28D7FF960063F450 /* SudokuPuzzle.swift */,
 			);
 			path = SudokuPuzzle;
@@ -298,6 +301,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DDC6F7CC28E3F3C1001CB49E /* Solver.swift in Sources */,
 				DD52AC3E28D7FF960063F450 /* Drawer.swift in Sources */,
 				DD52AC0B28D7FA850063F450 /* SudokuApp.swift in Sources */,
 				DD52AC4028D7FF960063F450 /* SudokuPuzzle.swift in Sources */,

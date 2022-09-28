@@ -13,11 +13,13 @@ extension SudokuPuzzle {
             self.level = level
             self.limit = level * level
             self.label = label
+            fullSet    = Set( 0 ..< limit )
         }
                 
-        let level: Int
-        let limit: Int
-        let label: String
+        let level:   Int
+        let limit:   Int
+        let label:   String
+        let fullSet: Set<Int>
         
         func index( from symbol: Character ) -> Int? {
             if level < 4 {

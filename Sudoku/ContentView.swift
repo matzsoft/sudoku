@@ -69,6 +69,8 @@ struct ControlView: View {
     @Binding var audioVerifyType: AudioVerifyType
     @State private var showingConflictAlert = false
     @State private var conflictCount = 0
+    @State private var showingValidityAlert = false
+    @State private var isValid = false
     
     var conflictMessage: String {
         if conflictCount == 0 { return "No conflicts found." }
@@ -98,8 +100,14 @@ struct ControlView: View {
             .alert( conflictMessage, isPresented: $showingConflictAlert ) {
                 Button( "OK", role: .cancel ) { }
             }
-            Button( "Check Validity" ) {}
-            Button( "Show Solution" ) {}
+            Button( "Check Validity" ) {
+                isValid = document.checkValidity()
+                showingValidityAlert = true
+            }
+            .alert( "Puzzle is \(isValid ? "" : "not ")solvable.", isPresented: $showingValidityAlert ) {
+                Button( "OK", role: .cancel ) { }
+            }
+            Button( "Show Solution" ) { document.showSolution() }
         }
         .padding()
         .background( Color( red: 241 / 255, green: 241 / 255, blue: 241 / 255 ) )

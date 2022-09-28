@@ -26,7 +26,7 @@ extension SudokuPuzzle {
         let blockIndex:  Int
         var solved:      Int?
         var penciled =   Set<Int>()
-        var fixed =      false
+        var changeable = false
         var conflict =   false
 
         init( levelInfo: Level, solved: Int? = nil, penciled: Set<Int> = [], row: Int, col: Int ) {

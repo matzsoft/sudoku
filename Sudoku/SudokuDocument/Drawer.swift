@@ -11,17 +11,18 @@ import CoreText
 
 extension SudokuDocument {
     struct Drawer {
-        static let checkerboardLightColor = CGColor( red: 1, green: 1, blue: 1, alpha: 1 )
-        static let checkerboardDarkColor  = CGColor( red: 0.90, green: 0.90, blue: 0.90, alpha: 1 )
-        static let lineColor              = CGColor( red: 0, green: 0, blue: 0, alpha: 1 )
-        static let textColor              = CGColor( red: 0, green: 0, blue: 0, alpha: 1 )
-        static let conflictColor          = CGColor( red: 1, green: 0, blue: 0, alpha: 1 )
+        static let checkerboardLightColor = CGColor( red: 1,     green: 1,     blue: 1,     alpha: 1 )
+        static let checkerboardDarkColor  = CGColor( red: 0.90,  green: 0.90,  blue: 0.90,  alpha: 1 )
+        static let lineColor              = CGColor( red: 0,     green: 0,     blue: 0,     alpha: 1 )
+        static let textColor              = CGColor( red: 0,     green: 0,     blue: 0,     alpha: 1 )
+        static let conflictColor          = CGColor( red: 1,     green: 0,     blue: 0,     alpha: 1 )
+        static let changeableColor        = CGColor( red: 0.616, green: 0.522, blue: 0.388, alpha: 1 )
 
         static let fatLine      = CGFloat( 2.5 )
         static let thinLine     = CGFloat( 1.5 )
         static let cellMargin   = CGFloat( 2.5 )
         static let miniCellSize = CGFloat( 10 )
-        static let penciledFont = setupFontAttributes( color: textColor, fontSize: miniCellSize )
+        static let penciledFont = setupFont( color: textColor, fontSize: miniCellSize )
 
         let levelInfo:        SudokuPuzzle.Level
         let puzzleSize:       CGFloat
@@ -29,9 +30,10 @@ extension SudokuDocument {
         let cellInteriorSize: CGFloat
         let solvedFont:       CFDictionary
         let conflictFont:     CFDictionary
+        let changeableFont:   CFDictionary
         let context:          CGContext
 
-        static func setupFontAttributes( color: CGColor, fontSize: CGFloat ) -> CFDictionary {
+        static func setupFont( color: CGColor, fontSize: CGFloat ) -> CFDictionary {
             let fontAttributes = [
                 String( kCTFontFamilyNameAttribute ) : "Arial",
                 String( kCTFontStyleNameAttribute )  : "Regular",
@@ -79,9 +81,9 @@ extension SudokuDocument {
             cellSize = Drawer.cellMargin * ( level + 1 ) + Drawer.miniCellSize * level
             puzzleSize = cellSize * limit + fatLines + thinLines
             cellInteriorSize = cellSize - 2 * Drawer.cellMargin
-            solvedFont = Drawer.setupFontAttributes( color: Drawer.textColor, fontSize: cellInteriorSize )
-            conflictFont = Drawer.setupFontAttributes(
-                color: Drawer.conflictColor, fontSize: cellInteriorSize )
+            solvedFont = Drawer.setupFont( color: Drawer.textColor, fontSize: cellInteriorSize )
+            conflictFont = Drawer.setupFont( color: Drawer.conflictColor, fontSize: cellInteriorSize )
+            changeableFont = Drawer.setupFont( color: Drawer.changeableColor, fontSize: cellInteriorSize )
             context = Drawer.makeContext( size: NSSize( width: cellSize, height: cellSize ) )!
         }
         
@@ -134,7 +136,13 @@ extension SudokuDocument {
                     x: Drawer.cellMargin, y: Drawer.cellMargin,
                     width: cellInteriorSize, height: cellInteriorSize
                 )
-                let font = cell.conflict ? conflictFont : solvedFont
+                var font = solvedFont
+                
+                if cell.conflict {
+                    font = conflictFont
+                } else if cell.changeable {
+                    font = changeableFont
+                }
                 
                 draw( symbol: symbol, rect: rect, font: font )
                 return

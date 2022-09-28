@@ -13,6 +13,7 @@ final class SudokuDocument: ReferenceFileDocument {
     
     var puzzle:      SudokuPuzzle
     var drawer:      Drawer
+    var solver:      SudokuPuzzle.Solver
     var undoManager: UndoManager?
     var isSpeaking = false
     var speechQueue: [ SpeechCommand ] = []
@@ -38,6 +39,7 @@ final class SudokuDocument: ReferenceFileDocument {
     init() {
         puzzle = SudokuPuzzle.empty
         drawer = Drawer( levelInfo: puzzle.levelInfo )
+        solver = SudokuPuzzle.Solver( puzzle: puzzle )
     }
 
     static var readableContentTypes: [UTType] { [.text] }
@@ -68,6 +70,7 @@ final class SudokuDocument: ReferenceFileDocument {
                 }
             }
         }
+        solver = SudokuPuzzle.Solver( puzzle: puzzle )
     }
     
     func snapshot( contentType: UTType ) throws -> Data {
@@ -158,5 +161,18 @@ final class SudokuDocument: ReferenceFileDocument {
     func markConflicts() -> Int {
         updateCount += 1
         return puzzle.markConflicts()
+    }
+    
+    func checkValidity() -> Bool {
+        solver = SudokuPuzzle.Solver( puzzle: puzzle )
+        solver.solve()
+        return solver.puzzle.cells.allSatisfy { $0.solved != nil }
+    }
+    
+    func showSolution() -> Void {
+        solver = SudokuPuzzle.Solver( puzzle: puzzle )
+        solver.solve()
+        ( puzzle, solver.puzzle ) = ( solver.puzzle, puzzle )
+        updateCount += 1
     }
 }

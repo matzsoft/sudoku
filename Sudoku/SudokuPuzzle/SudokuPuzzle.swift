@@ -13,6 +13,15 @@ struct SudokuPuzzle {
     struct Group {
         var theSet = Set<Int>()
         let cells: [Cell]
+        
+        mutating func setUsed() -> Void {
+            theSet = Set( cells.compactMap { $0.solved } )
+        }
+        
+        mutating func addUsed( index: Int ) -> Void {
+            theSet.insert( index )
+            cells.filter { $0.solved == nil }.forEach { $0.penciled.remove( index ) }
+        }
     }
     
     static let supportedLevels = [
@@ -48,6 +57,33 @@ struct SudokuPuzzle {
         let grid = ( 0 ..< levelInfo.limit ).map { row in
             ( 0 ..< levelInfo.limit ).map { col in
                 Cell( levelInfo: levelInfo, row: row, col: col )
+            }
+        }
+        let cells = grid.flatMap { $0 }
+        
+        self .grid = grid
+        rows = ( 0 ..< levelInfo.limit ).map {
+            row in Group( cells: cells.filter( { $0.row == row } ) )
+        }
+        cols = ( 0 ..< levelInfo.limit ).map {
+            col in Group( cells: cells.filter( { $0.col == col } ) )
+        }
+        blocks = ( 0 ..< levelInfo.limit ).map {
+            block in Group( cells: cells.filter( { $0.blockNumber == block } ) )
+        }
+    }
+    
+    init( deepCopy from: SudokuPuzzle ) {
+        levelInfo = from.levelInfo
+        level = from.level
+        limit = from.limit
+        
+        let grid = from.grid.map { row in
+            row.map { cell in
+                Cell(
+                    levelInfo: from.levelInfo, solved: cell.solved, penciled: cell.penciled,
+                    row: cell.row, col: cell.col
+                )
             }
         }
         let cells = grid.flatMap { $0 }
