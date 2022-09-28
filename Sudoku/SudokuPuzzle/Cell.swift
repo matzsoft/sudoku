@@ -18,24 +18,26 @@ extension SudokuPuzzle {
             hasher.combine( col )
         }
 
-        var solved:      Int?
-        var penciled =   Set<Int>()
         let row:         Int
         let col:         Int
         let blockRow:    Int
         let blockCol:    Int
         let blockNumber: Int
         let blockIndex:  Int
+        var solved:      Int?
+        var penciled =   Set<Int>()
+        var fixed =      false
+        var conflict =   false
 
         init( levelInfo: Level, solved: Int? = nil, penciled: Set<Int> = [], row: Int, col: Int ) {
-            self.solved      = solved
-            self.penciled    = penciled
             self.row         = row
             self.col         = col
             self.blockRow    = row / levelInfo.level
             self.blockCol    = col / levelInfo.level
-            self.blockNumber = blockRow / levelInfo.level + blockCol / levelInfo.level
+            self.blockNumber = blockRow * levelInfo.level + blockCol
             self.blockIndex  = row % levelInfo.level * levelInfo.level + col % levelInfo.level
+            self.solved      = solved
+            self.penciled    = penciled
         }
         
         func speechString( puzzle: SudokuPuzzle ) -> String {

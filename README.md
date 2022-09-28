@@ -13,6 +13,7 @@ Still in early development.
 1. The document is marked edited when changes are made.
 1. Undo/redo is working properly.
 1. Speech verification of puzzles, including abort and restart.
+1. Can check a puzzle for conflicts and display them.
 
 ## TODO List
 For now, in no particular order, this is a list of things needed.

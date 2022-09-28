@@ -20,7 +20,7 @@ struct ContentView: View {
         document.undoManager = undoManager
         
         return HSplitView {
-            ControlView( documentMode: $documentMode, audioVerifyType: $audioVerifyType )
+            ControlView( document: document, documentMode: $documentMode, audioVerifyType: $audioVerifyType )
                 .frame( minWidth: 200, maxWidth: 200 )
                 .padding()
             PuzzleView( document: document )
@@ -64,8 +64,17 @@ struct ContentView_Previews: PreviewProvider {
 
 
 struct ControlView: View {
+    @ObservedObject var document: SudokuDocument
     @Binding var documentMode: DocumentMode
     @Binding var audioVerifyType: AudioVerifyType
+    @State private var showingConflictAlert = false
+    @State private var conflictCount = 0
+    
+    var conflictMessage: String {
+        if conflictCount == 0 { return "No conflicts found." }
+        if conflictCount == 1 { return "One conflict found." }
+        return "Found \(conflictCount) conflicts."
+    }
     
     var body: some View {
         VStack( alignment: .leading, spacing: 10 ) {
@@ -82,7 +91,13 @@ struct ControlView: View {
             }.pickerStyle( RadioGroupPickerStyle() )
             Divider()
             Label( "Verify", systemImage: "checkmark.shield" )
-            Button( "Check Conflicts" ) {}
+            Button( "Check Conflicts" ) {
+                conflictCount = document.markConflicts()
+                showingConflictAlert = true
+            }
+            .alert( conflictMessage, isPresented: $showingConflictAlert ) {
+                Button( "OK", role: .cancel ) { }
+            }
             Button( "Check Validity" ) {}
             Button( "Show Solution" ) {}
         }

@@ -20,7 +20,7 @@ final class SudokuDocument: ReferenceFileDocument {
     lazy var synthesizer: NSSpeechSynthesizer = getSynthesizer
     
     @Published var selection: SudokuPuzzle.Cell?
-    @Published var penciledCount = 0
+    @Published var updateCount = 0
     
     var levelInfo: SudokuPuzzle.Level {
         get { puzzle.levelInfo }
@@ -31,7 +31,7 @@ final class SudokuDocument: ReferenceFileDocument {
     }
     var needsLevel: Bool { puzzle.levelInfo.level == SudokuPuzzle.empty.level }
     var levelDescription: String { levelInfo.label }
-    var rows: [[SudokuPuzzle.Cell]] { puzzle.rows }
+    var rows: [[SudokuPuzzle.Cell]] { puzzle.grid }
     var puzzleSize: CGFloat { drawer.puzzleSize }
     var cellSize: CGFloat { drawer.cellSize }
 
@@ -62,7 +62,7 @@ final class SudokuDocument: ReferenceFileDocument {
         for ( row, line ) in lines.enumerated() {
             for ( col, symbol ) in line.enumerated() {
                 if let index = puzzle.levelInfo.index( from: symbol ) {
-                    puzzle.rows[row][col].solved = index
+                    puzzle.grid[row][col].solved = index
                 } else if symbol != "." {
                     throw CocoaError( .fileReadCorruptFile )
                 }
@@ -149,9 +149,14 @@ final class SudokuDocument: ReferenceFileDocument {
         if !cell.penciled.insert( index ).inserted {
             cell.penciled.remove( index )
         }
-        penciledCount = puzzle.penciledCount
+        updateCount += 1
         undoManager?.registerUndo( withTarget: self ) { document in
             document.togglePencil( cell: cell, index: index )
         }
+    }
+    
+    func markConflicts() -> Int {
+        updateCount += 1
+        return puzzle.markConflicts()
     }
 }
