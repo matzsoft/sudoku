@@ -9,33 +9,6 @@ import Foundation
 
 extension SudokuPuzzle {
     struct Solver {
-        class Group {
-            var theSet = Set<Int>()
-            let cells:  [Cell]
-
-            init( cells: [Cell] ) {
-                self.cells = cells
-                setUsed()
-            }
-            
-            func setUsed() -> Void {
-                theSet = Set( cells.compactMap { $0.solved } )
-            }
-            
-            func addUsed( index: Int ) -> Void {
-                theSet.insert( index )
-                cells.filter { $0.solved == nil }.forEach { $0.penciled.remove( index ) }
-            }
-            
-            func markConflicts() -> Void {
-                let solvedCells = cells.filter { $0.solved != nil }
-                let used = solvedCells.reduce( into: [ Int : Int ]() ) { $0[ $1.solved!, default: 0 ] += 1 }
-                let conflicts = Set( used.filter { $0.1 > 1 }.map { $0.0 } )
-                
-                solvedCells.filter { conflicts.contains( $0.solved! ) }.forEach { $0.conflict = true }
-            }
-        }
-        
         var puzzle: SudokuPuzzle
         var rows:   [Group]
         var cols:   [Group]
@@ -46,12 +19,17 @@ extension SudokuPuzzle {
             let newPuzzle = SudokuPuzzle( deepCopy: puzzle )
             let grid = newPuzzle.grid
             
-            rows = grid.map { Group( cells: $0 ) }
+            rows = grid.map { Group( levelInfo: puzzle.levelInfo, cells: $0 ) }
             cols = ( 0 ..< puzzle.limit ).map { col in
-                Group( cells: ( 0 ..< puzzle.limit ).map { row in grid[row][col] } )
+                Group(
+                    levelInfo: puzzle.levelInfo, cells: ( 0 ..< puzzle.limit ).map { row in grid[row][col] }
+                )
             }
-            blocks = ( 0 ..< puzzle.limit ).map {
-                block in Group( cells: newPuzzle.cells.filter( { $0.blockNumber == block } ) )
+            blocks = ( 0 ..< puzzle.limit ).map { block in
+                Group(
+                    levelInfo: puzzle.levelInfo,
+                    cells: newPuzzle.cells.filter( { $0.blockNumber == block } )
+                )
             }
             self.puzzle = newPuzzle
             groups = rows + cols + blocks
@@ -69,10 +47,9 @@ extension SudokuPuzzle {
                 if cell.solved != nil {
                     cell.penciled = Set()
                 } else {
-                    cell.penciled = puzzle.levelInfo.fullSet
-                        .subtracting( rows[cell.row].theSet )
-                        .subtracting( cols[cell.col].theSet )
-                        .subtracting( blocks[cell.blockNumber].theSet )
+                    cell.penciled = rows[cell.row].available
+                        .intersection( cols[cell.col].available )
+                        .intersection( blocks[cell.blockNumber].available )
                 }
             }
             
@@ -80,12 +57,42 @@ extension SudokuPuzzle {
                 let index = cell.penciled.removeFirst()
 
                 cell.solved = index
-                rows[ cell.row ].addUsed( index: index )
-                cols[ cell.col ].addUsed( index: index )
-                blocks[ cell.blockNumber ].addUsed( index: index )
+                rows[ cell.row ].removeAvailable( index: index )
+                cols[ cell.col ].removeAvailable( index: index )
+                blocks[ cell.blockNumber ].removeAvailable( index: index )
             }
             
 //            let wango = groups.first(where: { })
+        }
+    }
+}
+
+
+extension SudokuPuzzle.Solver {
+    class Group {
+        var available = Set<Int>()
+        let cells:      [SudokuPuzzle.Cell]
+
+        init( levelInfo: SudokuPuzzle.Level, cells: [SudokuPuzzle.Cell] ) {
+            self.cells = cells
+            setAvailable( universalSet: levelInfo.fullSet )
+        }
+        
+        func setAvailable( universalSet: Set<Int> ) -> Void {
+            available = universalSet.subtracting( Set( cells.compactMap { $0.solved } ) )
+        }
+        
+        func removeAvailable( index: Int ) -> Void {
+            available.remove( index )
+            cells.filter { $0.solved == nil }.forEach { $0.penciled.remove( index ) }
+        }
+        
+        func markConflicts() -> Void {
+            let solvedCells = cells.filter { $0.solved != nil }
+            let used = solvedCells.reduce( into: [ Int : Int ]() ) { $0[ $1.solved!, default: 0 ] += 1 }
+            let conflicts = Set( used.filter { $0.1 > 1 }.map { $0.0 } )
+            
+            solvedCells.filter { conflicts.contains( $0.solved! ) }.forEach { $0.conflict = true }
         }
     }
 }
