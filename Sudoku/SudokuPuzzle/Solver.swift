@@ -42,10 +42,11 @@ extension SudokuPuzzle {
         }
         
         func solve() -> Void {
+            // Phase 1 - Set changeable and penciled for each cell.
             for cell in puzzle.cells {
                 cell.changeable = cell.solved == nil
                 if cell.solved != nil {
-                    cell.penciled = Set()
+                    cell.penciled = []
                 } else {
                     cell.penciled = rows[cell.row].available
                         .intersection( cols[cell.col].available )
@@ -53,16 +54,28 @@ extension SudokuPuzzle {
                 }
             }
             
+            // Phase 2 - all cells with only one possiblity get marked as solved.
             while let cell = puzzle.cells.first( where: { $0.penciled.count == 1 } ) {
                 let index = cell.penciled.removeFirst()
 
-                cell.solved = index
-                rows[ cell.row ].removeAvailable( index: index )
-                cols[ cell.col ].removeAvailable( index: index )
-                blocks[ cell.blockNumber ].removeAvailable( index: index )
+                markSolved( cell: cell, index: index )
             }
             
-//            let wango = groups.first(where: { })
+            // Phase 3 - all groups with only one position for a symbol get that cell marked solved.
+            while let group = groups.first( where: { $0.firstSingleton != nil } ) {
+                let candidate = group.firstSingleton!
+                let cell = group.cells.first { $0.penciled.contains( candidate ) }!
+                
+                markSolved( cell: cell, index: candidate )
+            }
+        }
+        
+        func markSolved( cell: Cell, index: Int ) -> Void {
+            cell.solved = index
+            cell.penciled = []
+            rows[ cell.row ].removeAvailable( index: index )
+            cols[ cell.col ].removeAvailable( index: index )
+            blocks[ cell.blockNumber ].removeAvailable( index: index )
         }
     }
 }
@@ -73,6 +86,12 @@ extension SudokuPuzzle.Solver {
         var available = Set<Int>()
         let cells:      [SudokuPuzzle.Cell]
 
+        var firstSingleton: Int? {
+            available.first { candidate in
+                cells.filter { $0.penciled.contains( candidate ) }.count == 1
+            }
+        }
+        
         init( levelInfo: SudokuPuzzle.Level, cells: [SudokuPuzzle.Cell] ) {
             self.cells = cells
             setAvailable( universalSet: levelInfo.fullSet )
