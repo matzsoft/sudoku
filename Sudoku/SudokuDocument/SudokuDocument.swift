@@ -160,8 +160,11 @@ final class SudokuDocument: ReferenceFileDocument {
     }
     
     func markConflicts() -> Int {
+        solver = SudokuPuzzle.Solver( puzzle: puzzle )
+        let conflicts = solver.findConflicts()
+        
         updateCount += 1
-        return puzzle.markConflicts()
+        return puzzle.markConflicts( conflicts: conflicts )
     }
     
     func checkValidity() -> Bool {
