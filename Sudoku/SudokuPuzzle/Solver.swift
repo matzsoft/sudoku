@@ -41,7 +41,7 @@ extension SudokuPuzzle {
             return puzzle.cells.filter { $0.conflict }
         }
         
-        func solve() -> Void {
+        func solve() -> Bool {
             // Phase 1 - Set changeable and penciled for each cell.
             for cell in puzzle.cells {
                 cell.changeable = cell.solved == nil
@@ -54,19 +54,35 @@ extension SudokuPuzzle {
                 }
             }
             
-            // Phase 2 - all cells with only one possiblity get marked as solved.
-            while let cell = puzzle.cells.first( where: { $0.penciled.count == 1 } ) {
-                let index = cell.penciled.removeFirst()
-
-                markSolved( cell: cell, index: index )
-            }
-            
-            // Phase 3 - all groups with only one position for a symbol get that cell marked solved.
-            while let group = groups.first( where: { $0.firstSingleton != nil } ) {
-                let candidate = group.firstSingleton!
-                let cell = group.cells.first { $0.penciled.contains( candidate ) }!
+            while true {
+                let oldSolvedCount   = puzzle.solvedCount
+                let oldPenciledCount = puzzle.penciledCount
                 
-                markSolved( cell: cell, index: candidate )
+                // Phase 2 - all cells with only one possiblity get marked as solved.
+                while let cell = puzzle.cells.first( where: { $0.penciled.count == 1 } ) {
+                    markSolved( cell: cell, index: cell.penciled.first! )
+                }
+                if puzzle.isSolved { return true }
+                
+                // Phase 3 - all groups with only one position for a symbol get that cell marked solved.
+                while let group = groups.first( where: { $0.firstSingleton != nil } ) {
+                    let candidate = group.firstSingleton!
+                    let cell = group.cells.first { $0.penciled.contains( candidate ) }!
+                    
+                    markSolved( cell: cell, index: candidate )
+                }
+                if puzzle.isSolved { return true }
+
+                // Phase 4 - like Phase 3, but with pairs instead of singletons.
+                for group in groups {
+                    if let pair = group.firstPair {
+                        group.cells.filter { $0.penciled != pair }.forEach { $0.penciled.subtract( pair ) }
+                    }
+                }
+                
+                if oldSolvedCount == puzzle.solvedCount && oldPenciledCount == puzzle.penciledCount {
+                    return false
+                }
             }
         }
         
@@ -90,6 +106,21 @@ extension SudokuPuzzle.Solver {
             available.first { candidate in
                 cells.filter { $0.penciled.contains( candidate ) }.count == 1
             }
+        }
+        
+        var pairs: [ Set<Int> ] {
+            let list = Array( available )
+            guard list.count > 1 else { return [] }
+            
+            return ( 0 ... list.count - 2 ).flatMap { first in
+                ( first ... list.count - 1 ).map { second in
+                    Set( [ list[first], list[second] ] )
+                }
+            }
+        }
+        
+        var firstPair: Set<Int>? {
+            pairs.first { pair in cells.filter { $0.penciled == pair }.count == 2 }
         }
         
         init( levelInfo: SudokuPuzzle.Level, cells: [SudokuPuzzle.Cell] ) {

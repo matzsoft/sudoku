@@ -21,7 +21,10 @@ struct SudokuPuzzle {
     let limit:     Int
     let grid:      [[Cell]]
     
-    var cells: [Cell] { grid.flatMap { $0 } }
+    var cells:         [Cell] { grid.flatMap { $0 } }
+    var isSolved:      Bool   { cells.allSatisfy { $0.solved != nil } }
+    var solvedCount:   Int    { cells.filter { $0.solved != nil }.count }
+    var penciledCount: Int    { cells.map { $0.penciled.count}.reduce( 0, + ) }
     
     var asString: String {
         grid.map { row -> String in
