@@ -89,6 +89,39 @@ extension SudokuPuzzle {
                 }
                 if puzzle.isSolved { return true }
 
+                // Phase 5 - cross reference blocks against rows and columns.
+                for block in blocks {
+                    for candidate in block.available {
+                        let cells = block.cells.filter { $0.penciled.contains( candidate ) }
+                        let row   = cells[0].row
+                        let col   = cells[0].col
+                        
+                        if cells.allSatisfy( { $0.row == row } ) {
+                            rows[row].cells.filter { !cells.contains( $0 ) }.forEach {
+                                $0.penciled.remove( candidate )
+                            }
+                        }
+                        if cells.allSatisfy( { $0.col == col } ) {
+                            cols[col].cells.filter { !cells.contains( $0 ) }.forEach {
+                                $0.penciled.remove( candidate )
+                            }
+                        }
+                    }
+                }
+                for group in rows + cols {
+                    for candidate in group.available {
+                        let cells = group.cells.filter { $0.penciled.contains( candidate ) }
+                        let block = cells[0].blockNumber
+                        
+                        if cells.allSatisfy( { $0.blockNumber == block } ) {
+                            blocks[block].cells.filter { !cells.contains( $0 ) }.forEach {
+                                $0.penciled.remove( candidate )
+                            }
+                        }
+                    }
+                }
+                if puzzle.isSolved { return true }
+
                 if oldSolvedCount == puzzle.solvedCount && oldPenciledCount == puzzle.penciledCount {
                     return false
                 }
