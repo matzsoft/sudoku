@@ -58,13 +58,13 @@ extension SudokuPuzzle {
                 let oldSolvedCount   = puzzle.solvedCount
                 let oldPenciledCount = puzzle.penciledCount
                 
-                // Phase 2 - all cells with only one possiblity get marked as solved.
+                // Phase 2 - mark as solved all cells with only one possiblity.
                 while let cell = puzzle.cells.first( where: { $0.penciled.count == 1 } ) {
                     markSolved( cell: cell, index: cell.penciled.first! )
                 }
                 if puzzle.isSolved { return true }
                 
-                // Phase 3 - all groups with only one position for a symbol get that cell marked solved.
+                // Phase 3 - mark as solved all cells that have the only occurance of a symbol in its group.
                 while let group = groups.first( where: { $0.firstSingleton != nil } ) {
                     let candidate = group.firstSingleton!
                     let cell = group.cells.first { $0.penciled.contains( candidate ) }!
@@ -73,13 +73,22 @@ extension SudokuPuzzle {
                 }
                 if puzzle.isSolved { return true }
 
-                // Phase 4 - like Phase 3, but with pairs instead of singletons.
+                // Phase 4 - find sets of n cells that have identical penciled sets with n members.
                 for group in groups {
-                    if let pair = group.firstPair {
-                        group.cells.filter { $0.penciled != pair }.forEach { $0.penciled.subtract( pair ) }
+                    let universal = Set( group.cells )
+                    var remaining = universal
+                    
+                    while let candidate = remaining.first?.penciled {
+                        let matches = group.cells.filter { $0.penciled == candidate }
+
+                        if matches.count == candidate.count {
+                            universal.subtracting( matches ).forEach { $0.penciled.subtract( candidate ) }
+                        }
+                        remaining.subtract( matches )
                     }
                 }
-                
+                if puzzle.isSolved { return true }
+
                 if oldSolvedCount == puzzle.solvedCount && oldPenciledCount == puzzle.penciledCount {
                     return false
                 }
