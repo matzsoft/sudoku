@@ -61,9 +61,12 @@ extension SudokuPuzzle {
         
         func solve() -> Bool {
             while true {
-                let oldSolvedCount   = puzzle.solvedCount
-                let oldPenciledCount = puzzle.penciledCount
-                
+                let solvedCount   = puzzle.solvedCount
+                let penciledCount = puzzle.penciledCount
+                var isStuck: Bool {
+                    solvedCount == puzzle.solvedCount && penciledCount == puzzle.penciledCount
+                }
+
                 // Phase 1 - mark as solved all cells with only one possiblity.
                 onePossiblity()
                 if puzzle.isSolved { return true }
@@ -78,10 +81,11 @@ extension SudokuPuzzle {
                 // Phase 4 - cross reference blocks against rows and columns.
                 crossReference()
 
+                // Phase 5 - process subsets of the available symbols within each group.
+                if isStuck { handleSubsets() }
+
                 // If no progess was made this loop then give up.
-                if oldSolvedCount == puzzle.solvedCount && oldPenciledCount == puzzle.penciledCount {
-                    return false
-                }
+                if isStuck { return false }
             }
         }
         
@@ -177,6 +181,29 @@ extension SudokuPuzzle {
                 }
             }
         }
+        
+        // For each group, examine all proper subsets of the available symbols with more than 1 element.
+        // When a subset of n symbols has n unsolved cells with only elements of that subset, the other
+        // unsolved cells can have the elements of the subset removed.  When a subset of n symbols has
+        // only n unsolved cells that contain elements of the subset, all other symbols can be removed
+        // from those cells.  This is an expensive operation so it is only performed when other methods
+        // are not advancing the solution.  Also note that no cells will be marked solved by this action.
+        func handleSubsets() -> Void {
+            for group in groups {
+                for subset in group.generateSubsets() {
+                    let unsolved = group.cells.filter { $0.solved == nil }
+                    let lonely = unsolved.filter { $0.penciled.subtracting( subset ).isEmpty }
+                    if lonely.count == subset.count {
+                        unsolved.filter { !lonely.contains( $0 ) }.forEach { $0.penciled.subtract( subset ) }
+                    }
+                    
+                    let crowded = unsolved.filter { !$0.penciled.intersection( subset ).isEmpty }
+                    if crowded.count == subset.count {
+                        crowded.forEach { $0.penciled.formIntersection( subset ) }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -195,19 +222,28 @@ extension SudokuPuzzle.Solver {
             }
         }
         
-        var pairs: [ Set<Int> ] {
-            let list = Array( available )
-            guard list.count > 1 else { return [] }
-            
-            return ( 0 ... list.count - 2 ).flatMap { first in
-                ( first ... list.count - 1 ).map { second in
-                    Set( [ list[first], list[second] ] )
-                }
+        func generateSubsets() -> [Set<Int>] {
+            guard available.count > 2 else { return [] }
+            return ( 2 ..< available.count ).flatMap { size in
+                generateSubsets( size: size, subset: Set<Int>(), candidates: available )
             }
         }
         
-        var firstPair: Set<Int>? {
-            pairs.first { pair in cells.filter { $0.penciled == pair }.count == 2 }
+        func generateSubsets( size: Int, subset: Set<Int>, candidates: Set<Int> ) -> [Set<Int>] {
+            guard subset.count < size else { return [subset] }
+            var result = [Set<Int>]()
+            var remaining = candidates
+
+            while !remaining.isEmpty {
+                let next = remaining.removeFirst()
+                result.append(
+                    contentsOf: generateSubsets(
+                        size: size, subset: subset.union( Set( [ next ] ) ), candidates: remaining
+                    )
+                )
+            }
+
+            return result
         }
         
         init( levelInfo: SudokuPuzzle.Level, cells: [SudokuPuzzle.Cell] ) {
