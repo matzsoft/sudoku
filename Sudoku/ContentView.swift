@@ -99,16 +99,12 @@ struct ControlView: View {
                 conflictCount = document.markConflicts()
                 showingConflictAlert = true
             }
-            .alert( conflictMessage, isPresented: $showingConflictAlert ) {
-                Button( "OK", role: .cancel ) { }
-            }
+            .alert( conflictMessage, isPresented: $showingConflictAlert ) {}
             Button( "Check Validity" ) {
                 validityMessage = document.checkValidity()
                 showingValidityAlert = true
             }
-            .alert( validityMessage, isPresented: $showingValidityAlert ) {
-                Button( "OK", role: .cancel ) { }
-            }
+            .alert( validityMessage, isPresented: $showingValidityAlert ) {}
             if !document.isShowingSolution {
                 Button( "Show Solution" ) {
                     if let message = document.showSolution() {
@@ -118,9 +114,7 @@ struct ControlView: View {
                 }
             } else {
                 Button( "Hide Solution" ) { document.hideSolution() }
-                    .alert( solutionMessage, isPresented: $showingSolutionAlert ) {
-                        Button( "OK", role: .cancel ) { }
-                    }
+                    .alert( solutionMessage, isPresented: $showingSolutionAlert ) {}
             }
         }
         .padding()
