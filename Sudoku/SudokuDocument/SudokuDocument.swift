@@ -169,12 +169,16 @@ final class SudokuDocument: ReferenceFileDocument {
     
     func checkValidity() -> Bool {
         solver = SudokuPuzzle.Solver( puzzle: puzzle )
-        return solver.solve()
+        do {
+            return try solver.solve()
+        } catch {
+            return false
+        }
     }
     
     func showSolution() -> Void {
         solver = SudokuPuzzle.Solver( puzzle: puzzle )
-        _ = solver.solve()
+        _ = try? solver.solve()
         isShowingSolution = true
         updateCount += 1
     }

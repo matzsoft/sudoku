@@ -59,7 +59,7 @@ extension SudokuPuzzle {
             return puzzle.cells.filter { $0.conflict }
         }
         
-        func solve() -> Bool {
+        func solve() throws -> Bool {
             while true {
                 let solvedCount   = puzzle.solvedCount
                 let penciledCount = puzzle.penciledCount
@@ -68,21 +68,21 @@ extension SudokuPuzzle {
                 }
 
                 // Phase 1 - mark as solved all cells with only one possiblity.
-                onePossiblity()
+                try onePossiblity()
                 if puzzle.isSolved { return true }
                 
                 // Phase 2 - mark as solved all cells that have the only occurance of a symbol in its group.
-                onlyOccurrence()
+                try onlyOccurrence()
                 if puzzle.isSolved { return true }
 
                 // Phase 3 - find sets of n cells that have identical penciled sets with n members.
-                findIdenticalSets()
+                try findIdenticalSets()
 
                 // Phase 4 - cross reference blocks against rows and columns.
-                crossReference()
+                try crossReference()
 
                 // Phase 5 - process subsets of the available symbols within each group.
-                if isStuck { handleSubsets() }
+                if isStuck { try handleSubsets() }
 
                 // If no progess was made this loop then give up.
                 if isStuck { return false }
@@ -91,31 +91,35 @@ extension SudokuPuzzle {
         
         // Mark a cell as solved with a specific value.  This also includes emptying the penciled set
         // and reducing the available sets in all the relevant groups.
-        func markSolved( cell: Cell, index: Int ) -> Void {
+        func markSolved( cell: Cell, index: Int ) throws -> Void {
             cell.solved = index
             cell.penciled = []
             rows[ cell.row ].removeAvailable( index: index )
             cols[ cell.col ].removeAvailable( index: index )
             blocks[ cell.blockNumber ].removeAvailable( index: index )
+            
+            if !rows[ cell.row ].isValid { throw SolverError.badRow( cell.row ) }
+            if !cols[ cell.col ].isValid { throw SolverError.badCol( cell.col ) }
+            if !blocks[ cell.blockNumber ].isValid { throw SolverError.badBlock( cell.blockNumber ) }
         }
         
         // Mark all cells that have only a single member of the penciled set as solved.
         // Since finding one of these can create others, keep looping until there are no more.
-        func onePossiblity() -> Void {
+        func onePossiblity() throws -> Void {
             while let cell = puzzle.cells.first( where: { $0.penciled.count == 1 } ) {
-                markSolved( cell: cell, index: cell.penciled.first! )
+                try markSolved( cell: cell, index: cell.penciled.first! )
             }
         }
         
         // Mark as solved all cells that are unique, within one of its groups, in containing a
         // specific symbol.  Since finding one of these can create others, keep looping until there
         // are no more.
-        func onlyOccurrence() -> Void {
+        func onlyOccurrence() throws -> Void {
             while let group = groups.first( where: { $0.firstSingleton != nil } ) {
                 let candidate = group.firstSingleton!
                 let cell = group.cells.first { $0.penciled.contains( candidate ) }!
                 
-                markSolved( cell: cell, index: candidate )
+                try markSolved( cell: cell, index: candidate )
             }
         }
         
@@ -124,7 +128,7 @@ extension SudokuPuzzle {
         // removed from the penciled sets of all the other cells in the group.  Since the corrective
         // action does not negate the condition for that group we only loop through the groups once.
         // Also note that no cells will be marked solved by this action.
-        func findIdenticalSets() -> Void {
+        func findIdenticalSets() throws -> Void {
             for group in groups {
                 let universal = Set( group.cells )
                 var remaining = universal
@@ -137,6 +141,7 @@ extension SudokuPuzzle {
                     }
                     remaining.subtract( matches )
                 }
+                try group.validate()
             }
         }
         
@@ -146,7 +151,7 @@ extension SudokuPuzzle {
         // a single block means that all occurences of that symbol can be removed from the other cells
         // in the block.  To avoid infinite loops, we loop once through the blocks and once through
         // all the rows and columns.  Also note that no cells will be marked solved by this action.
-        func crossReference() -> Void {
+        func crossReference() throws -> Void {
             // Cross reference each block against the rows and columns.
             for block in blocks {
                 for candidate in block.available {
@@ -165,6 +170,7 @@ extension SudokuPuzzle {
                         }
                     }
                 }
+                try block.validate()
             }
             
             // Cross reference each row and column against the blocks.
@@ -179,6 +185,7 @@ extension SudokuPuzzle {
                         }
                     }
                 }
+                try group.validate()
             }
         }
         
@@ -188,7 +195,7 @@ extension SudokuPuzzle {
         // only n unsolved cells that contain elements of the subset, all other symbols can be removed
         // from those cells.  This is an expensive operation so it is only performed when other methods
         // are not advancing the solution.  Also note that no cells will be marked solved by this action.
-        func handleSubsets() -> Void {
+        func handleSubsets() throws -> Void {
             for group in groups {
                 for subset in group.generateSubsets() {
                     let unsolved = group.cells.filter { $0.solved == nil }
@@ -202,6 +209,7 @@ extension SudokuPuzzle {
                         crowded.forEach { $0.penciled.formIntersection( subset ) }
                     }
                 }
+                try group.validate()
             }
         }
     }
@@ -216,9 +224,42 @@ extension SudokuPuzzle.Solver {
         var available = Set<Int>()
         let cells:      [SudokuPuzzle.Cell]
 
+        var isValid: Bool { available == cells.reduce( Set<Int>() ) { $0.union( $1.penciled ) } }
+        
         var firstSingleton: Int? {
             available.first { candidate in
                 cells.filter { $0.penciled.contains( candidate ) }.count == 1
+            }
+        }
+        
+        init( levelInfo: SudokuPuzzle.Level, cells: [SudokuPuzzle.Cell] ) {
+            self.cells = cells
+            setAvailable( universalSet: levelInfo.fullSet )
+        }
+        
+        func setAvailable( universalSet: Set<Int> ) -> Void {
+            available = universalSet.subtracting( Set( cells.compactMap { $0.solved } ) )
+        }
+        
+        func removeAvailable( index: Int ) -> Void {
+            available.remove( index )
+            cells.filter { $0.solved == nil }.forEach { $0.penciled.remove( index ) }
+        }
+        
+        func markConflicts() -> Void {
+            let solvedCells = cells.filter { $0.solved != nil }
+            let used = solvedCells.reduce( into: [ Int : Int ]() ) { $0[ $1.solved!, default: 0 ] += 1 }
+            let conflicts = Set( used.filter { $0.1 > 1 }.map { $0.0 } )
+            
+            solvedCells.filter { conflicts.contains( $0.solved! ) }.forEach { $0.conflict = true }
+        }
+        
+        func validate() throws -> Void {
+            if isValid { return }
+            if cells[0].row == cells.last!.row { throw SolverError.badRow( cells[0].row ) }
+            if cells[0].col == cells.last!.col { throw SolverError.badCol( cells[0].col ) }
+            if cells[0].blockNumber == cells[0].blockNumber {
+                throw SolverError.badBlock( cells[0].blockNumber )
             }
         }
         
@@ -245,27 +286,11 @@ extension SudokuPuzzle.Solver {
 
             return result
         }
-        
-        init( levelInfo: SudokuPuzzle.Level, cells: [SudokuPuzzle.Cell] ) {
-            self.cells = cells
-            setAvailable( universalSet: levelInfo.fullSet )
-        }
-        
-        func setAvailable( universalSet: Set<Int> ) -> Void {
-            available = universalSet.subtracting( Set( cells.compactMap { $0.solved } ) )
-        }
-        
-        func removeAvailable( index: Int ) -> Void {
-            available.remove( index )
-            cells.filter { $0.solved == nil }.forEach { $0.penciled.remove( index ) }
-        }
-        
-        func markConflicts() -> Void {
-            let solvedCells = cells.filter { $0.solved != nil }
-            let used = solvedCells.reduce( into: [ Int : Int ]() ) { $0[ $1.solved!, default: 0 ] += 1 }
-            let conflicts = Set( used.filter { $0.1 > 1 }.map { $0.0 } )
-            
-            solvedCells.filter { conflicts.contains( $0.solved! ) }.forEach { $0.conflict = true }
-        }
+    }
+    
+    enum SolverError: Error {
+        case badRow( Int )
+        case badCol( Int )
+        case badBlock( Int )
     }
 }
