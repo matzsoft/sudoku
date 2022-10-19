@@ -167,20 +167,36 @@ final class SudokuDocument: ReferenceFileDocument {
         return puzzle.markConflicts( conflicts: conflicts )
     }
     
-    func checkValidity() -> Bool {
+    func checkValidity() -> String {
         solver = SudokuPuzzle.Solver( puzzle: puzzle )
         do {
-            return try solver.solve()
+            if try solver.solve() {
+                return "Puzzle has a solution."
+            } else {
+                return "No solution found."
+            }
+        } catch let error as SudokuPuzzle.Solver.SolverError {
+            return "Puzzle has an error in \(error.location)"
         } catch {
-            return false
+            return "Unknown error detected."
         }
     }
     
-    func showSolution() -> Void {
+    func showSolution() -> String? {
         solver = SudokuPuzzle.Solver( puzzle: puzzle )
-        _ = try? solver.solve()
         isShowingSolution = true
         updateCount += 1
+        do {
+            if try solver.solve() {
+                return nil
+            } else {
+                return "The solver is stumped."
+            }
+        } catch let error as SudokuPuzzle.Solver.SolverError {
+            return "There is an error in \(error.location)"
+        } catch {
+            return "Unknown error detected."
+        }
     }
     
     func hideSolution() -> Void {

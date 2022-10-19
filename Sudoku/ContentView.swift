@@ -70,7 +70,9 @@ struct ControlView: View {
     @State private var showingConflictAlert = false
     @State private var conflictCount = 0
     @State private var showingValidityAlert = false
-    @State private var isValid = false
+    @State private var validityMessage = ""
+    @State private var showingSolutionAlert = false
+    @State private var solutionMessage = ""
     
     var conflictMessage: String {
         if conflictCount == 0 { return "No conflicts found." }
@@ -101,16 +103,24 @@ struct ControlView: View {
                 Button( "OK", role: .cancel ) { }
             }
             Button( "Check Validity" ) {
-                isValid = document.checkValidity()
+                validityMessage = document.checkValidity()
                 showingValidityAlert = true
             }
-            .alert( "Puzzle is \(isValid ? "" : "not ")solvable.", isPresented: $showingValidityAlert ) {
+            .alert( validityMessage, isPresented: $showingValidityAlert ) {
                 Button( "OK", role: .cancel ) { }
             }
             if !document.isShowingSolution {
-                Button( "Show Solution" ) { document.showSolution() }
+                Button( "Show Solution" ) {
+                    if let message = document.showSolution() {
+                        solutionMessage = message
+                        showingSolutionAlert = true
+                    }
+                }
             } else {
                 Button( "Hide Solution" ) { document.hideSolution() }
+                    .alert( solutionMessage, isPresented: $showingSolutionAlert ) {
+                        Button( "OK", role: .cancel ) { }
+                    }
             }
         }
         .padding()

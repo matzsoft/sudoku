@@ -292,5 +292,16 @@ extension SudokuPuzzle.Solver {
         case badRow( Int )
         case badCol( Int )
         case badBlock( Int )
+        
+        var location: String {
+            switch self {
+            case .badRow( let row ):
+                return "row \(row+1)"
+            case .badCol( let col ):
+                return "column \(col+1)"
+            case .badBlock( let blockNumber ):
+                return "block \(blockNumber+1)"
+            }
+        }
     }
 }
