@@ -176,7 +176,7 @@ final class SudokuDocument: ReferenceFileDocument {
                 return "No solution found."
             }
         } catch let error as SudokuPuzzle.Solver.SolverError {
-            return "Puzzle has an error in \(error.location)"
+            return error.description
         } catch {
             return "Unknown error detected."
         }
@@ -193,7 +193,7 @@ final class SudokuDocument: ReferenceFileDocument {
                 return "The solver is stumped."
             }
         } catch let error as SudokuPuzzle.Solver.SolverError {
-            return "There is an error in \(error.location)"
+            return error.description
         } catch {
             return "Unknown error detected."
         }

@@ -19,21 +19,22 @@ extension SudokuPuzzle {
         // Set up the invariants that will be maintained throughout the solution process.
         // Namely all cells in the puzzle copy are set as follows:
         // For cells marked solved - mark it as not changeable and empty its penciled set.
-        // For cells not yet solved = mark it as changeable and set the pencilled set from the available
+        // For cells not yet solved = mark it as changeable and set the penciled set from the available
         // sets of all the groups to which it belongs.
         init( puzzle: SudokuPuzzle ) {
             let newPuzzle = SudokuPuzzle( deepCopy: puzzle )
             let grid = newPuzzle.grid
             
-            rows = grid.map { Group( levelInfo: puzzle.levelInfo, cells: $0 ) }
+            rows = grid.map { Group( .row, levelInfo: puzzle.levelInfo, cells: $0 ) }
             cols = ( 0 ..< puzzle.limit ).map { col in
                 Group(
-                    levelInfo: puzzle.levelInfo, cells: ( 0 ..< puzzle.limit ).map { row in grid[row][col] }
+                    .col, levelInfo: puzzle.levelInfo,
+                    cells: ( 0 ..< puzzle.limit ).map { row in grid[row][col] }
                 )
             }
             blocks = ( 0 ..< puzzle.limit ).map { block in
                 Group(
-                    levelInfo: puzzle.levelInfo,
+                    .block, levelInfo: puzzle.levelInfo,
                     cells: newPuzzle.cells.filter( { $0.blockNumber == block } )
                 )
             }
@@ -98,9 +99,9 @@ extension SudokuPuzzle {
             cols[ cell.col ].removeAvailable( index: index )
             blocks[ cell.blockNumber ].removeAvailable( index: index )
             
-            if !rows[ cell.row ].isValid { throw SolverError.badRow( cell.row ) }
-            if !cols[ cell.col ].isValid { throw SolverError.badCol( cell.col ) }
-            if !blocks[ cell.blockNumber ].isValid { throw SolverError.badBlock( cell.blockNumber ) }
+            try rows[ cell.row ].validate()
+            try cols[ cell.col ].validate()
+            try blocks[ cell.blockNumber ].validate()
         }
         
         // Mark all cells that have only a single member of the penciled set as solved.
@@ -220,11 +221,23 @@ extension SudokuPuzzle.Solver {
     // There are many places in the Solver where rows, columns, and blocks are treated equivalently.
     // So the Group class is used to represent them.  Additionally Group supports the available property,
     // the set of values still available to be distributed.
-    class Group {
+    class Group: CustomStringConvertible {
+        enum GroupType: String { case row, col = "column", block }
+        
+        let type:       GroupType
         var available = Set<Int>()
         let cells:      [SudokuPuzzle.Cell]
 
-        var isValid: Bool { available == cells.reduce( Set<Int>() ) { $0.union( $1.penciled ) } }
+        var description: String {
+            switch type {
+            case .row:
+                return "row \(cells[0].row+1)"
+            case .col:
+                return "column \(cells[0].col+1)"
+            case .block:
+                return "block \(cells[0].blockNumber+1)"
+            }
+        }
         
         var firstSingleton: Int? {
             available.first { candidate in
@@ -232,7 +245,8 @@ extension SudokuPuzzle.Solver {
             }
         }
         
-        init( levelInfo: SudokuPuzzle.Level, cells: [SudokuPuzzle.Cell] ) {
+        init( _ type: GroupType, levelInfo: SudokuPuzzle.Level, cells: [SudokuPuzzle.Cell] ) {
+            self.type  = type
             self.cells = cells
             setAvailable( universalSet: levelInfo.fullSet )
         }
@@ -255,12 +269,19 @@ extension SudokuPuzzle.Solver {
         }
         
         func validate() throws -> Void {
-            if isValid { return }
-            if cells[0].row == cells.last!.row { throw SolverError.badRow( cells[0].row ) }
-            if cells[0].col == cells.last!.col { throw SolverError.badCol( cells[0].col ) }
-            if cells[0].blockNumber == cells[0].blockNumber {
-                throw SolverError.badBlock( cells[0].blockNumber )
-            }
+            let unsolved = cells.filter { $0.solved == nil }
+            if available.count < unsolved.count {
+                throw SolverError.excessAvailable( self ) }
+            if available.count > unsolved.count {
+                throw SolverError.insufficientAvailable( self ) }
+            
+            let penciled = unsolved.reduce( Set<Int>() ) { $0.union( $1.penciled ) }
+            if available.count < penciled.count {
+                throw SolverError.excessPencilled( self ) }
+            if available.count > penciled.count {
+                throw SolverError.insufficientPencilled( self ) }
+            if available != penciled {
+                throw SolverError.inconsistentPencilled( self ) }
         }
         
         func generateSubsets() -> [Set<Int>] {
@@ -288,19 +309,25 @@ extension SudokuPuzzle.Solver {
         }
     }
     
-    enum SolverError: Error {
-        case badRow( Int )
-        case badCol( Int )
-        case badBlock( Int )
+    enum SolverError: Error, CustomStringConvertible {
+        case excessAvailable( Group )
+        case insufficientAvailable( Group )
+        case excessPencilled( Group )
+        case insufficientPencilled( Group )
+        case inconsistentPencilled( Group )
         
-        var location: String {
+        var description: String {
             switch self {
-            case .badRow( let row ):
-                return "row \(row+1)"
-            case .badCol( let col ):
-                return "column \(col+1)"
-            case .badBlock( let blockNumber ):
-                return "block \(blockNumber+1)"
+            case .excessAvailable( let group ):
+                return "Too many symbols left in the available set for \(group)."
+            case .insufficientAvailable( let group ):
+                return "Not enough symbols left in the available set for \(group)."
+            case .excessPencilled( let group ):
+                return "The available set is smaller than the penciled union for \(group)."
+            case .insufficientPencilled( let group ):
+                return "The available set is larger than the penciled union for \(group)."
+            case .inconsistentPencilled( let group ):
+                return "The available set and penciled union for \(group)."
             }
         }
     }
