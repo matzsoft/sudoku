@@ -60,6 +60,10 @@ extension SudokuPuzzle {
             return puzzle.cells.filter { $0.conflict }
         }
         
+        func validate() throws -> Void {
+            for group in groups { try group.validate() }
+        }
+        
         func solve() throws -> Bool {
             while true {
                 let solvedCount   = puzzle.solvedCount
@@ -99,9 +103,7 @@ extension SudokuPuzzle {
             cols[ cell.col ].removeAvailable( index: index )
             blocks[ cell.blockNumber ].removeAvailable( index: index )
             
-            try rows[ cell.row ].validate()
-            try cols[ cell.col ].validate()
-            try blocks[ cell.blockNumber ].validate()
+            try validate()
         }
         
         // Mark all cells that have only a single member of the penciled set as solved.
@@ -142,7 +144,7 @@ extension SudokuPuzzle {
                     }
                     remaining.subtract( matches )
                 }
-                try group.validate()
+                try validate()
             }
         }
         
@@ -171,7 +173,7 @@ extension SudokuPuzzle {
                         }
                     }
                 }
-                try block.validate()
+                try validate()
             }
             
             // Cross reference each row and column against the blocks.
@@ -186,7 +188,7 @@ extension SudokuPuzzle {
                         }
                     }
                 }
-                try group.validate()
+                try validate()
             }
         }
         
@@ -210,7 +212,7 @@ extension SudokuPuzzle {
                         crowded.forEach { $0.penciled.formIntersection( subset ) }
                     }
                 }
-                try group.validate()
+                try validate()
             }
         }
     }
