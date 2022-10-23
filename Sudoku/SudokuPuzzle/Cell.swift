@@ -9,15 +9,6 @@ import Foundation
 
 extension SudokuPuzzle {
     class Cell: Hashable, Identifiable {
-        static func == ( lhs: SudokuPuzzle.Cell, rhs: SudokuPuzzle.Cell ) -> Bool {
-            return lhs.row == rhs.row && lhs.col == rhs.col
-        }
-        
-        func hash( into hasher: inout Hasher ) {
-            hasher.combine( row )
-            hasher.combine( col )
-        }
-
         let row:         Int
         let col:         Int
         let blockRow:    Int
@@ -29,6 +20,8 @@ extension SudokuPuzzle {
         var changeable = false
         var conflict =   false
 
+        var description: String { "cell[\(row+1),\(col+1)]" }
+
         init( levelInfo: Level, solved: Int? = nil, penciled: Set<Int> = [], row: Int, col: Int ) {
             self.row         = row
             self.col         = col
@@ -38,6 +31,15 @@ extension SudokuPuzzle {
             self.blockIndex  = row % levelInfo.level * levelInfo.level + col % levelInfo.level
             self.solved      = solved
             self.penciled    = penciled
+        }
+        
+        static func == ( lhs: SudokuPuzzle.Cell, rhs: SudokuPuzzle.Cell ) -> Bool {
+            return lhs.row == rhs.row && lhs.col == rhs.col
+        }
+        
+        func hash( into hasher: inout Hasher ) {
+            hasher.combine( row )
+            hasher.combine( col )
         }
         
         func speechString( puzzle: SudokuPuzzle ) -> String {

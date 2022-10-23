@@ -89,6 +89,9 @@ extension SudokuPuzzle {
                 // Phase 5 - process subsets of the available symbols within each group.
                 if isStuck { try handleSubsets() }
 
+                // Phase 6 - the X-Wing strategy.
+                if isStuck { try xWing() }
+
                 // If no progess was made this loop then give up.
                 if isStuck { return false }
             }
@@ -201,7 +204,7 @@ extension SudokuPuzzle {
         func handleSubsets() throws -> Void {
             for group in groups {
                 for subset in group.generateSubsets() {
-                    let unsolved = group.cells.filter { $0.solved == nil }
+                    let unsolved = group.unsolved
                     let lonely = unsolved.filter { $0.penciled.subtracting( subset ).isEmpty }
                     if lonely.count == subset.count {
                         unsolved.filter { !lonely.contains( $0 ) }.forEach { $0.penciled.subtract( subset ) }
@@ -213,6 +216,77 @@ extension SudokuPuzzle {
                     }
                 }
                 try validate()
+            }
+        }
+        
+        // The X-Wing strategy involves finding 4 Cells that form the corners of a rectangle that meet
+        // certain criteria.  All four must contain the same symbol.  Either the top and bottom rows of
+        // the rectangle contain the only 2 occurances of the symbol or the left and right columns of the
+        // rectangle contain the only 2 occurances of the symbol.  If the criteria are met, then the rows
+        // and columns that bound the rectangle can be cleared of all other occurances of the symbol.
+        // This is an expensive operation so it is only performed when other methods are not advancing
+        // the solution.  Also note that no cells will be marked solved by this action.
+        func xWing() throws -> Void {
+            try xWingRows()
+            try xWingCols()
+            try validate()
+        }
+        
+        func xWingRows() throws -> Void {
+            let pairs = rows.reduce( into: [ Int : [[Cell]] ]() ) { dict, row in
+                row.available.forEach { candidate in
+                    let matches = row.cells.filter { $0.penciled.contains( candidate ) }
+                    if matches.count == 2 {
+                        dict[ candidate, default: [] ].append( matches )
+                    }
+                }
+            }.filter { $0.value.count > 1 }
+            let relevant = pairs.reduce( into: [ Int : [[[Cell]]] ]() ) { dict, pair in
+                let ( candidate, list ) = pair
+                list.subsequences( size: 2 ).filter {
+                    $0[0][0].col == $0[1][0].col && $0[0][1].col == $0[1][1].col
+                }.forEach {
+                    dict[ candidate, default: [] ].append( $0 )
+                }
+            }
+            for ( candidate, list ) in relevant {
+                list.forEach{ corners in
+                    cols[ corners[0][0].col ].removeAvailable(
+                        index: candidate, exceptions: [ corners[0][0], corners[1][0] ]
+                    )
+                    cols[ corners[0][1].col ].removeAvailable(
+                        index: candidate, exceptions: [ corners[0][1], corners[1][1] ]
+                    )
+                }
+            }
+        }
+        
+        func xWingCols() throws -> Void {
+            let pairs = cols.reduce( into: [ Int : [[Cell]] ]() ) { dict, col in
+                col.available.forEach { candidate in
+                    let matches = col.cells.filter { $0.penciled.contains( candidate ) }
+                    if matches.count == 2 {
+                        dict[ candidate, default: [] ].append( matches )
+                    }
+                }
+            }.filter { $0.value.count > 1 }
+            let relevant = pairs.reduce( into: [ Int : [[[Cell]]] ]() ) { dict, pair in
+                let ( candidate, list ) = pair
+                list.subsequences( size: 2 ).filter {
+                    $0[0][0].row == $0[1][0].row && $0[0][1].row == $0[1][1].row
+                }.forEach {
+                    dict[ candidate, default: [] ].append( $0 )
+                }
+            }
+            for ( candidate, list ) in relevant {
+                list.forEach{ corners in
+                    rows[ corners[0][0].row ].removeAvailable(
+                        index: candidate, exceptions: [ corners[0][0], corners[1][0] ]
+                    )
+                    rows[ corners[0][1].row ].removeAvailable(
+                        index: candidate, exceptions: [ corners[0][1], corners[1][1] ]
+                    )
+                }
             }
         }
     }
@@ -230,6 +304,7 @@ extension SudokuPuzzle.Solver {
         var available = Set<Int>()
         let cells:      [SudokuPuzzle.Cell]
 
+        var unsolved: [SudokuPuzzle.Cell] { cells.filter { $0.solved == nil } }
         var description: String {
             switch type {
             case .row:
@@ -259,7 +334,11 @@ extension SudokuPuzzle.Solver {
         
         func removeAvailable( index: Int ) -> Void {
             available.remove( index )
-            cells.filter { $0.solved == nil }.forEach { $0.penciled.remove( index ) }
+            unsolved.forEach { $0.penciled.remove( index ) }
+        }
+        
+        func removeAvailable( index: Int, exceptions: [SudokuPuzzle.Cell] ) -> Void {
+            unsolved.filter { !exceptions.contains( $0 ) }.forEach { $0.penciled.remove( index ) }
         }
         
         func markConflicts() -> Void {
@@ -271,7 +350,7 @@ extension SudokuPuzzle.Solver {
         }
         
         func validate() throws -> Void {
-            let unsolved = cells.filter { $0.solved == nil }
+            let unsolved = unsolved
             if available.count < unsolved.count {
                 throw SolverError.excessAvailable( self ) }
             if available.count > unsolved.count {
@@ -332,5 +411,26 @@ extension SudokuPuzzle.Solver {
                 return "The available set and penciled union for \(group)."
             }
         }
+    }
+}
+
+
+extension Array {
+    func subsequences( size: Int ) -> [[Element]] {
+        subsequences( size: size, subsequence: [] )
+    }
+    
+    func subsequences( size: Int, subsequence: [Element] ) -> [[Element]] {
+        guard subsequence.count < size else { return [subsequence] }
+        var result = [[Element]]()
+        var remaining = self
+
+        while !remaining.isEmpty {
+            let next = remaining.removeFirst()
+            let newSubsequence = remaining.subsequences( size: size, subsequence: subsequence + [next] )
+            result.append( contentsOf: newSubsequence )
+        }
+
+        return result
     }
 }
