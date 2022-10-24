@@ -86,56 +86,48 @@ extension SudokuDocument {
         return wasSpeaking
     }
 
+    func speechStartCol( type: AudioVerifyType ) -> Int? {
+        switch type {
+        case .fromBeginning:
+            return 0
+        case .fromSelection:
+            guard let selection = selection else { return nil }
+            return selection.col
+        }
+    }
+    
     func fillSpeechQueue( type: AudioVerifyType ) -> [ SpeechCommand ] {
         var commands: [ SpeechCommand ] = []
         
         if rows.isEmpty {
             commands.append( SpeechCommand( row: 0, col: 0, string: "Puzzle is empty." ) )
         } else {
-            var startCol = 0
+            guard let startCol = speechStartCol( type: type ) else { NSSound.beep(); return [] }
             
-            if type == .fromSelection {
-                guard let selection = selection else { NSSound.beep(); return [] }
-                startCol = selection.col
-            }
-
             for col in startCol ..< rows[0].count {
+                var dotRow: Int?
+                
                 commands.append( SpeechCommand( row: 0, col: col, string: "Column \(col+1)." ) )
                 for row in 0 ..< rows.count {
-                    let cell = rows[row][col]
-                    let string = cell.speechString( puzzle: puzzle )
+                    let string = rows[row][col].speechString( puzzle: puzzle )
                     
-                    commands.append( SpeechCommand( row: row, col: col, string: string ) )
-                }
-            }
-        }
-
-        var runStart: Int?
-        var reduced: [ SpeechCommand ] = [ commands[0] ]
-
-        commands.append( SpeechCommand( row: 0, col: 0, string: "dummy" ) )  // Acts as sentinel
-        for index in 1 ..< commands.count {
-            if commands[index-1].string == commands[index].string {
-                if runStart == nil {
-                    runStart = index - 1
-                }
-            } else {
-                if let runIndex = runStart {
-                    let runLength = index - runIndex
-                    
-                    runStart = nil
-                    if runLength > 2 {
-                        let newString = commands[runIndex].string + ", repeats \(runLength)"
-                        
-                        reduced.removeLast( runLength )
-                        reduced.append( SpeechCommand( copy: commands[runIndex], string: newString ) )
+                    if string == "dot" {
+                        if dotRow == nil { dotRow = row }
+                    } else {
+                        if let dotRow = dotRow {
+                            let dotCount = row - dotRow
+                            let dotString = dotCount < 4
+                                ? Array( repeating: "dot", count: dotCount ).joined( separator: " " )
+                                : "dot by \(dotCount)"
+                            commands.append( SpeechCommand( row: dotRow, col: col, string: dotString ) )
+                        }
+                        commands.append( SpeechCommand( row: row, col: col, string: string ) )
+                        dotRow = nil
                     }
                 }
             }
-            reduced.append( commands[index] )
         }
-        
-        reduced.removeLast()
-        return reduced
+
+        return commands
     }
 }
