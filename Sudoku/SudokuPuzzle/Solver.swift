@@ -91,6 +91,9 @@ extension SudokuPuzzle {
 
                 // Phase 6 - the X-Wing strategy.
                 if isStuck { try xWing() }
+                
+                // Phase 7 - the Swordfish strategy.
+                if isStuck { try swordfish() }
 
                 // If no progess was made this loop then give up.
                 if isStuck { return false }
@@ -233,15 +236,8 @@ extension SudokuPuzzle {
         }
         
         func xWingRows() throws -> Void {
-            let pairs = rows.reduce( into: [ Int : [[Cell]] ]() ) { dict, row in
-                row.available.forEach { candidate in
-                    let matches = row.cells.filter { $0.penciled.contains( candidate ) }
-                    if matches.count == 2 {
-                        dict[ candidate, default: [] ].append( matches )
-                    }
-                }
-            }.filter { $0.value.count > 1 }
-            let relevant = pairs.reduce( into: [ Int : [[[Cell]]] ]() ) { dict, pair in
+            let pairs = rows.findDoublets( minimum: 2 )
+            let relavent = pairs.reduce( into: [ Int : [[[Cell]]] ]() ) { dict, pair in
                 let ( candidate, list ) = pair
                 list.subsequences( size: 2 ).filter {
                     $0[0][0].col == $0[1][0].col && $0[0][1].col == $0[1][1].col
@@ -249,7 +245,7 @@ extension SudokuPuzzle {
                     dict[ candidate, default: [] ].append( $0 )
                 }
             }
-            for ( candidate, list ) in relevant {
+            for ( candidate, list ) in relavent {
                 list.forEach{ corners in
                     cols[ corners[0][0].col ].removeAvailable(
                         index: candidate, exceptions: [ corners[0][0], corners[1][0] ]
@@ -262,15 +258,8 @@ extension SudokuPuzzle {
         }
         
         func xWingCols() throws -> Void {
-            let pairs = cols.reduce( into: [ Int : [[Cell]] ]() ) { dict, col in
-                col.available.forEach { candidate in
-                    let matches = col.cells.filter { $0.penciled.contains( candidate ) }
-                    if matches.count == 2 {
-                        dict[ candidate, default: [] ].append( matches )
-                    }
-                }
-            }.filter { $0.value.count > 1 }
-            let relevant = pairs.reduce( into: [ Int : [[[Cell]]] ]() ) { dict, pair in
+            let pairs = cols.findDoublets( minimum: 2 )
+            let relavent = pairs.reduce( into: [ Int : [[[Cell]]] ]() ) { dict, pair in
                 let ( candidate, list ) = pair
                 list.subsequences( size: 2 ).filter {
                     $0[0][0].row == $0[1][0].row && $0[0][1].row == $0[1][1].row
@@ -278,7 +267,7 @@ extension SudokuPuzzle {
                     dict[ candidate, default: [] ].append( $0 )
                 }
             }
-            for ( candidate, list ) in relevant {
+            for ( candidate, list ) in relavent {
                 list.forEach{ corners in
                     rows[ corners[0][0].row ].removeAvailable(
                         index: candidate, exceptions: [ corners[0][0], corners[1][0] ]
@@ -288,6 +277,59 @@ extension SudokuPuzzle {
                     )
                 }
             }
+        }
+        
+        // The Swordfish strategy involves finding a symbol that meets certain criteria.  There must
+        // be 3 rows that contain only 2 occurances of that symbol.  The cells with the symbol must
+        // also share columns such that the 1st and 2nd rows share a column, the 1st and 3rd rows share
+        // a column, and the 2nd and 3rd rows share a column.  If the criteria are met, then the 3
+        // columns can be cleared of all other occurances of the symbol.  This is an expensive operation
+        // so it is only performed when other methods are not advancing the solution.  Also note that
+        // no cells will be marked solved by this action.
+        func swordfish() throws -> Void {
+            let pairs = rows.findDoublets( minimum: 3 )
+            let relavent = pairs.reduce( into: [ Int : [[[Cell]]] ]() ) { dict, pair in
+                let ( candidate, list ) = pair
+                list.subsequences( size: 3 ).filter {
+                    $0[0][0].col == $0[1][0].col &&         // x    x
+                    $0[0][1].col == $0[2][0].col &&         // x         x
+                    $0[1][1].col == $0[2][1].col ||         //      x    x
+                    
+                    $0[0][0].col == $0[1][0].col &&         // x         x
+                    $0[0][1].col == $0[2][1].col &&         // x    x
+                    $0[1][1].col == $0[2][0].col ||         //      x    x
+                    
+                    $0[0][0].col == $0[2][0].col &&         // x    x
+                    $0[0][1].col == $0[1][0].col &&         //      x    x
+                    $0[1][1].col == $0[2][1].col ||         // x         x
+                    
+                    $0[0][0].col == $0[2][0].col &&         // x         x
+                    $0[0][1].col == $0[1][1].col &&         //      x    x
+                    $0[1][0].col == $0[2][1].col ||         // x    x
+                    
+                    $0[0][0].col == $0[2][1].col &&         //      x    x
+                    $0[0][1].col == $0[1][1].col &&         // x         x
+                    $0[1][0].col == $0[2][0].col ||         // x    x
+                    
+                    $0[0][0].col == $0[1][1].col &&         //      x    x
+                    $0[0][1].col == $0[2][1].col &&         // x    x
+                    $0[1][0].col == $0[2][0].col            // x         x
+                }.forEach {
+                    dict[ candidate, default: [] ].append( $0 )
+                }
+            }
+            for ( candidate, list ) in relavent {
+                list.forEach { rowSet in
+                    let rowIndices = rowSet.reduce( into: Set<Int>() ) { $0.insert( $1[0].row ) }
+                    let colIndices = rowSet.reduce( into: Set<Int>() ) { $0.insert( $1[0].col ) }
+                    colIndices.forEach { colIndex in
+                        cols[colIndex].unsolved.filter { !rowIndices.contains( $0.row ) }.forEach {
+                            $0.penciled.remove( candidate )
+                        }
+                    }
+                }
+            }
+            try validate()
         }
     }
 }

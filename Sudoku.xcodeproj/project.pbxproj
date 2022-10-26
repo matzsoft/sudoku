@@ -155,10 +155,10 @@
 			isa = PBXGroup;
 			children = (
 				DD52AC3828D7FF960063F450 /* Cell.swift */,
+				DD7B3DCE2907690D0004BE7B /* Group.swift */,
 				DD52AC3C28D7FF960063F450 /* Level.swift */,
 				DDC6F7CB28E3F3C1001CB49E /* Solver.swift */,
 				DD52AC3B28D7FF960063F450 /* SudokuPuzzle.swift */,
-				DD7B3DCE2907690D0004BE7B /* Group.swift */,
 			);
 			path = SudokuPuzzle;
 			sourceTree = "<group>";
