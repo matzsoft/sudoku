@@ -80,19 +80,16 @@ extension SudokuPuzzle {
                 try onlyOccurrence()
                 if puzzle.isSolved { return true }
 
-                // Phase 3 - find sets of n cells that have identical penciled sets with n members.
-                try findIdenticalSets()
+                // Phase 3 - process subsets of the available symbols within each group.
+                try handleSubsets()
 
                 // Phase 4 - cross reference blocks against rows and columns.
                 try crossReference()
 
-                // Phase 5 - process subsets of the available symbols within each group.
-                if isStuck { try handleSubsets() }
-
-                // Phase 6 - the X-Wing strategy.
+                // Phase 5 - the X-Wing strategy.
                 if isStuck { try xWing() }
                 
-                // Phase 7 - the Swordfish strategy.
+                // Phase 6 - the Swordfish strategy.
                 if isStuck { try swordfish() }
 
                 // If no progess was made this loop then give up.
@@ -129,28 +126,6 @@ extension SudokuPuzzle {
                 let cell = group.cells.first { $0.penciled.contains( candidate ) }!
                 
                 try markSolved( cell: cell, index: candidate )
-            }
-        }
-        
-        // Any group that has a set of cells with identical penciled sets are checked to see if the
-        // number of cells is equal to the count of the penciled sets.  If so, those values can be
-        // removed from the penciled sets of all the other cells in the group.  Since the corrective
-        // action does not negate the condition for that group we only loop through the groups once.
-        // Also note that no cells will be marked solved by this action.
-        func findIdenticalSets() throws -> Void {
-            for group in groups {
-                let universal = Set( group.cells )
-                var remaining = universal
-                
-                while let candidate = remaining.first?.penciled {
-                    let matches = group.cells.filter { $0.penciled == candidate }
-
-                    if matches.count == candidate.count {
-                        universal.subtracting( matches ).forEach { $0.penciled.subtract( candidate ) }
-                    }
-                    remaining.subtract( matches )
-                }
-                try validate()
             }
         }
         
@@ -206,8 +181,8 @@ extension SudokuPuzzle {
         // are not advancing the solution.  Also note that no cells will be marked solved by this action.
         func handleSubsets() throws -> Void {
             for group in groups {
-                for subset in group.generateSubsets() {
-                    let unsolved = group.unsolved
+                let unsolved = group.unsolved
+                for subset in group.generateSubsets( upperBound: unsolved.count / 2 ) {
                     let lonely = unsolved.filter { $0.penciled.subtracting( subset ).isEmpty }
                     if lonely.count == subset.count {
                         unsolved.filter { !lonely.contains( $0 ) }.forEach { $0.penciled.subtract( subset ) }

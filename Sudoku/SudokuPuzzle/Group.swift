@@ -79,9 +79,9 @@ extension SudokuPuzzle.Solver {
                 throw SolverError.inconsistentPencilled( self ) }
         }
         
-        func generateSubsets() -> [Set<Int>] {
-            guard available.count > 2 else { return [] }
-            return ( 2 ..< available.count ).flatMap { size in
+        func generateSubsets( upperBound: Int ) -> [Set<Int>] {
+            guard upperBound >= 2 else { return [] }
+            return ( 2 ... upperBound ).flatMap { size in
                 generateSubsets( size: size, subset: Set<Int>(), candidates: available )
             }
         }
