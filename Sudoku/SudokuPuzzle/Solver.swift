@@ -64,6 +64,9 @@ extension SudokuPuzzle {
             for group in groups { try group.validate() }
         }
         
+        // Note - I have found SudokuWiki.org to be a great resource for sample puzzles that illustrate
+        // the various strategies.  They also have good explanations.  So I have decided to adopt their
+        // nomenclature.
         func solve() throws -> Bool {
             while true {
                 let solvedCount   = puzzle.solvedCount
@@ -73,18 +76,18 @@ extension SudokuPuzzle {
                 }
 
                 // Phase 1 - mark as solved all cells with only one possiblity.
-                try onePossiblity()
+                try nakedSingles()
                 if puzzle.isSolved { return true }
                 
                 // Phase 2 - mark as solved all cells that have the only occurance of a symbol in its group.
-                try onlyOccurrence()
+                try hiddenSingles()
                 if puzzle.isSolved { return true }
 
                 // Phase 3 - process subsets of the available symbols within each group.
-                try handleSubsets()
+                try nakedAndHiddenSubsets()
 
                 // Phase 4 - cross reference blocks against rows and columns.
-                try crossReference()
+                try intersectionRemoval()
 
                 // Phase 5 - the X-Wing strategy.
                 if isStuck { try xWing() }
@@ -111,7 +114,7 @@ extension SudokuPuzzle {
         
         // Mark all cells that have only a single member of the penciled set as solved.
         // Since finding one of these can create others, keep looping until there are no more.
-        func onePossiblity() throws -> Void {
+        func nakedSingles() throws -> Void {
             while let cell = puzzle.cells.first( where: { $0.penciled.count == 1 } ) {
                 try markSolved( cell: cell, index: cell.penciled.first! )
             }
@@ -120,7 +123,7 @@ extension SudokuPuzzle {
         // Mark as solved all cells that are unique, within one of its groups, in containing a
         // specific symbol.  Since finding one of these can create others, keep looping until there
         // are no more.
-        func onlyOccurrence() throws -> Void {
+        func hiddenSingles() throws -> Void {
             while let group = groups.first( where: { $0.firstSingleton != nil } ) {
                 let candidate = group.firstSingleton!
                 let cell = group.cells.first { $0.penciled.contains( candidate ) }!
@@ -135,7 +138,7 @@ extension SudokuPuzzle {
         // a single block means that all occurences of that symbol can be removed from the other cells
         // in the block.  To avoid infinite loops, we loop once through the blocks and once through
         // all the rows and columns.  Also note that no cells will be marked solved by this action.
-        func crossReference() throws -> Void {
+        func intersectionRemoval() throws -> Void {
             // Cross reference each block against the rows and columns.
             for block in blocks {
                 for candidate in block.available {
@@ -177,20 +180,19 @@ extension SudokuPuzzle {
         // When a subset of n symbols has n unsolved cells with only elements of that subset, the other
         // unsolved cells can have the elements of the subset removed.  When a subset of n symbols has
         // only n unsolved cells that contain elements of the subset, all other symbols can be removed
-        // from those cells.  This is an expensive operation so it is only performed when other methods
-        // are not advancing the solution.  Also note that no cells will be marked solved by this action.
-        func handleSubsets() throws -> Void {
+        // from those cells.  Also note that no cells will be marked solved by this action.
+        func nakedAndHiddenSubsets() throws -> Void {
             for group in groups {
                 let unsolved = group.unsolved
                 for subset in group.generateSubsets( upperBound: unsolved.count / 2 ) {
-                    let lonely = unsolved.filter { $0.penciled.subtracting( subset ).isEmpty }
-                    if lonely.count == subset.count {
-                        unsolved.filter { !lonely.contains( $0 ) }.forEach { $0.penciled.subtract( subset ) }
+                    let naked = unsolved.filter { $0.penciled.subtracting( subset ).isEmpty }
+                    if naked.count == subset.count {
+                        unsolved.filter { !naked.contains( $0 ) }.forEach { $0.penciled.subtract( subset ) }
                     }
                     
-                    let crowded = unsolved.filter { !$0.penciled.intersection( subset ).isEmpty }
-                    if crowded.count == subset.count {
-                        crowded.forEach { $0.penciled.formIntersection( subset ) }
+                    let hidden = unsolved.filter { !$0.penciled.intersection( subset ).isEmpty }
+                    if hidden.count == subset.count {
+                        hidden.forEach { $0.penciled.formIntersection( subset ) }
                     }
                 }
                 try validate()
