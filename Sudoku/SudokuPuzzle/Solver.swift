@@ -213,7 +213,7 @@ extension SudokuPuzzle {
         }
         
         func xWingRows() throws -> Void {
-            let pairs = rows.findDoublets( minimum: 2 )
+            let pairs = rows.findClusters( of: 2 ... 2, minimumCount: 2 )
             let relavent = pairs.reduce( into: [ Int : [[[Cell]]] ]() ) { dict, pair in
                 let ( candidate, list ) = pair
                 list.subsequences( size: 2 ).filter {
@@ -235,7 +235,7 @@ extension SudokuPuzzle {
         }
         
         func xWingCols() throws -> Void {
-            let pairs = cols.findDoublets( minimum: 2 )
+            let pairs = rows.findClusters( of: 2 ... 2, minimumCount: 2 )
             let relavent = pairs.reduce( into: [ Int : [[[Cell]]] ]() ) { dict, pair in
                 let ( candidate, list ) = pair
                 list.subsequences( size: 2 ).filter {
@@ -257,40 +257,26 @@ extension SudokuPuzzle {
         }
         
         // The Swordfish strategy involves finding a symbol that meets certain criteria.  There must
-        // be 3 rows that contain only 2 occurances of that symbol.  The cells with the symbol must
-        // also share columns such that the 1st and 2nd rows share a column, the 1st and 3rd rows share
-        // a column, and the 2nd and 3rd rows share a column.  If the criteria are met, then the 3
-        // columns can be cleared of all other occurances of the symbol.  This is an expensive operation
-        // so it is only performed when other methods are not advancing the solution.  Also note that
-        // no cells will be marked solved by this action.
+        // be 3 rows that contain 2 or 3 occurances of that symbol.  The cells with the symbol must
+        // also share columns such that all the cells (there will be between 6 and 9 cells) lie within
+        // the same 3 columns.  If the criteria are met, then the 3 columns can be cleared of all other
+        // occurances of the symbol.  Note that this also applies switching rows and columns.  This is
+        // an expensive operation so it is only performed when other methods are not advancing the
+        // solution.  Also note that no cells will be marked solved by this action.
         func swordfish() throws -> Void {
-            let pairs = rows.findDoublets( minimum: 3 )
+            try swordfishRows()
+            try swordfishCols()
+            try validate()
+        }
+        
+        func swordfishRows() throws -> Void {
+            let pairs = rows.findClusters( of: 2 ... 3, minimumCount: 2 )
             let relavent = pairs.reduce( into: [ Int : [[[Cell]]] ]() ) { dict, pair in
                 let ( candidate, list ) = pair
                 list.subsequences( size: 3 ).filter {
-                    $0[0][0].col == $0[1][0].col &&         // x    x
-                    $0[0][1].col == $0[2][0].col &&         // x         x
-                    $0[1][1].col == $0[2][1].col ||         //      x    x
-                    
-                    $0[0][0].col == $0[1][0].col &&         // x         x
-                    $0[0][1].col == $0[2][1].col &&         // x    x
-                    $0[1][1].col == $0[2][0].col ||         //      x    x
-                    
-                    $0[0][0].col == $0[2][0].col &&         // x    x
-                    $0[0][1].col == $0[1][0].col &&         //      x    x
-                    $0[1][1].col == $0[2][1].col ||         // x         x
-                    
-                    $0[0][0].col == $0[2][0].col &&         // x         x
-                    $0[0][1].col == $0[1][1].col &&         //      x    x
-                    $0[1][0].col == $0[2][1].col ||         // x    x
-                    
-                    $0[0][0].col == $0[2][1].col &&         //      x    x
-                    $0[0][1].col == $0[1][1].col &&         // x         x
-                    $0[1][0].col == $0[2][0].col ||         // x    x
-                    
-                    $0[0][0].col == $0[1][1].col &&         //      x    x
-                    $0[0][1].col == $0[2][1].col &&         // x    x
-                    $0[1][0].col == $0[2][0].col            // x         x
+                    $0.reduce( Set<Int>() ) {
+                        $0.union( $1.reduce( into: Set<Int>() ) { $0.insert( $1.col ) } )
+                    }.count == 3
                 }.forEach {
                     dict[ candidate, default: [] ].append( $0 )
                 }
@@ -298,7 +284,9 @@ extension SudokuPuzzle {
             for ( candidate, list ) in relavent {
                 list.forEach { rowSet in
                     let rowIndices = rowSet.reduce( into: Set<Int>() ) { $0.insert( $1[0].row ) }
-                    let colIndices = rowSet.reduce( into: Set<Int>() ) { $0.insert( $1[0].col ) }
+                    let colIndices = rowSet.reduce( Set<Int>() ) {
+                        $0.union( $1.reduce( into: Set<Int>() ) { $0.insert( $1.col ) } )
+                    }
                     colIndices.forEach { colIndex in
                         cols[colIndex].unsolved.filter { !rowIndices.contains( $0.row ) }.forEach {
                             $0.penciled.remove( candidate )
@@ -306,7 +294,33 @@ extension SudokuPuzzle {
                     }
                 }
             }
-            try validate()
+        }
+        
+        func swordfishCols() throws -> Void {
+            let pairs = cols.findClusters( of: 2 ... 3, minimumCount: 2 )
+            let relavent = pairs.reduce( into: [ Int : [[[Cell]]] ]() ) { dict, pair in
+                let ( candidate, list ) = pair
+                list.subsequences( size: 3 ).filter {
+                    $0.reduce( Set<Int>() ) {
+                        $0.union( $1.reduce( into: Set<Int>() ) { $0.insert( $1.row ) } )
+                    }.count == 3
+                }.forEach {
+                    dict[ candidate, default: [] ].append( $0 )
+                }
+            }
+            for ( candidate, list ) in relavent {
+                list.forEach { colSet in
+                    let colIndices = colSet.reduce( into: Set<Int>() ) { $0.insert( $1[0].col ) }
+                    let rowIndices = colSet.reduce( Set<Int>() ) {
+                        $0.union( $1.reduce( into: Set<Int>() ) { $0.insert( $1.row ) } )
+                    }
+                    rowIndices.forEach { rowIndex in
+                        rows[rowIndex].unsolved.filter { !colIndices.contains( $0.col ) }.forEach {
+                            $0.penciled.remove( candidate )
+                        }
+                    }
+                }
+            }
         }
     }
 }

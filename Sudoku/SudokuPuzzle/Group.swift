@@ -106,14 +106,14 @@ extension SudokuPuzzle.Solver {
 }
 
 extension Array<SudokuPuzzle.Solver.Group> {
-    func findDoublets( minimum: Int ) -> [ Int : [[SudokuPuzzle.Cell]] ] {
+    func findClusters( of range: ClosedRange<Int>, minimumCount: Int ) -> [ Int : [[SudokuPuzzle.Cell]] ] {
         reduce( into: [ Int : [[SudokuPuzzle.Cell]] ]() ) { dict, group in
             group.available.forEach { candidate in
                 let matches = group.cells.filter { $0.penciled.contains( candidate ) }
-                if matches.count == 2 {
+                if range.contains( matches.count ) {
                     dict[ candidate, default: [] ].append( matches )
                 }
             }
-        }.filter { $0.value.count >= minimum }
+        }.filter { $0.value.count >= minimumCount }
     }
 }
