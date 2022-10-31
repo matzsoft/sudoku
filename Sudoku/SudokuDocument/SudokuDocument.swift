@@ -15,15 +15,15 @@ final class SudokuDocument: ReferenceFileDocument {
     var drawer:      Drawer
     var undoManager: UndoManager?
     var solver:      SudokuPuzzle.Solver
-    var isShowingSolution = false
-    var isSpeaking = false
     var speechQueue: [ SpeechCommand ] = []
     var speechDelegate: SpeechDelegate?
     lazy var synthesizer: NSSpeechSynthesizer = getSynthesizer
     
     @Published var selection: SudokuPuzzle.Cell?
+    @Published var isShowingSolution = false
+    @Published var isSpeaking = false
     @Published var updateCount = 0
-    
+
     var levelInfo: SudokuPuzzle.Level {
         get { puzzle.levelInfo }
         set {
@@ -185,7 +185,6 @@ final class SudokuDocument: ReferenceFileDocument {
     func showSolution() -> String? {
         solver = SudokuPuzzle.Solver( puzzle: puzzle )
         isShowingSolution = true
-        updateCount += 1
         do {
             if try solver.solve() {
                 return nil
@@ -201,6 +200,5 @@ final class SudokuDocument: ReferenceFileDocument {
     
     func hideSolution() -> Void {
         isShowingSolution = false
-        updateCount += 1
     }
 }
