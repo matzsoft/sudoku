@@ -51,6 +51,7 @@ extension SudokuPuzzle {
                         .intersection( cols[cell.col].available )
                         .intersection( blocks[cell.blockNumber].available )
                 }
+                cell.canSee = Set( rows[cell.row].cells + cols[cell.col].cells + blocks[cell.blockNumber].cells ).subtracting( [ cell ] )
             }
         }
         
@@ -95,6 +96,9 @@ extension SudokuPuzzle {
                 // Phase 6 - the Swordfish strategy.
                 if isStuck { try swordfish() }
 
+                // Phase 7 - the Y-Wing strategy.
+                if isStuck { try yWing() }
+
                 // If no progess was made this loop then give up.
                 if isStuck { return false }
             }
@@ -124,12 +128,14 @@ extension SudokuPuzzle {
         // specific symbol.  Since finding one of these can create others, keep looping until there
         // are no more.
         func hiddenSingles() throws -> Void {
-            while let group = groups.first( where: { $0.firstSingleton != nil } ) {
-                let candidate = group.firstSingleton!
+            func hiddenSingleton( group: Group ) throws -> Bool {
+                guard let candidate = group.firstSingleton else { return false }
                 let cell = group.cells.first { $0.penciled.contains( candidate ) }!
                 
                 try markSolved( cell: cell, index: candidate )
+                return true
             }
+            while try groups.first( where: hiddenSingleton ) != nil {}
         }
         
         // Any block that has all its occurences of a symbol within a single row (or column) means
@@ -318,6 +324,47 @@ extension SudokuPuzzle {
                         rows[rowIndex].unsolved.filter { !colIndices.contains( $0.col ) }.forEach {
                             $0.penciled.remove( candidate )
                         }
+                    }
+                }
+            }
+        }
+        
+        // The Y-Wing strategy requires 3 cells with 2 penciled candidates per cell.  The cells must
+        // match XY, XZ, and YZ.  XY must be able to see XZ and YZ.  It is irrelevant whether XZ and
+        // YZ can see each other.  This configuration implies that at least one of XZ and YZ will solve
+        // to Z.  So any cell that can be seen by both XZ and YZ can have Z eliminated from its penciled
+        // set.  As a consequece, we can work with a set of candidates that are all the cells with a
+        // penciled count of 2.  But when a Y-Wing is found and some penciled entries are removed, the
+        // candidates is potentially invalidated and it is best to return at that point.  This is an
+        // expensive operation so it is only performed when other methods are not advancing the
+        // solution.  Also note that no cells will be marked solved by this action.
+        func yWing() throws -> Void {
+            let candidates = Set( puzzle.cells.filter { $0.penciled.count == 2 } )
+            
+            for candidate in candidates {
+                guard let possibles = candidate.canSee?.intersection( candidates ) else { continue }
+                guard possibles.count > 1 else { continue }
+                let pincers = possibles.filter { $0.penciled.intersection( candidate.penciled ).count == 1 }
+                guard pincers.count > 1 else { continue }
+                
+                let penciled = pincers.reduce( into: [ Int : [Cell] ]() ) { dict, cell in
+                    let other = cell.penciled.subtracting( candidate.penciled )
+                    dict[ other.first!, default: [] ].append( cell )
+                }.filter { !candidate.penciled.contains( $0.key ) && $0.value.count > 1 }
+                    .mapValues { $0.subsequences( size: 2 ).filter { $0[0].penciled != $0[1].penciled } }
+                if penciled.isEmpty { continue }
+                
+                for ( removal, pairs ) in penciled {
+                    for pair in pairs {
+                        let removees = pair.reduce( Set( puzzle.cells ) ) {
+                            $0.intersection( $1.canSee! )
+                        }.subtracting( [ candidate ] )
+                            .filter { $0.penciled.contains( removal ) }
+                        
+                        if removees.isEmpty { continue }
+                        removees.forEach { $0.penciled.remove( removal ) }
+                        try validate()
+                        return
                     }
                 }
             }

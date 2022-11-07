@@ -19,6 +19,7 @@ extension SudokuPuzzle {
         var penciled =   Set<Int>()
         var changeable = false
         var conflict =   false
+        var canSee:      Set<Cell>?
 
         var description: String { "cell[\(row+1),\(col+1)]" }
 
