@@ -121,7 +121,7 @@ extension SudokuDocument {
         
         func draw( cell: SudokuPuzzle.Cell, selection: SudokuPuzzle.Cell? ) -> Void {
             if cell !== selection {
-                if ( cell.blockRow + cell.blockCol ).isMultiple( of: 2 ) {
+                if ( cell.boxRow + cell.boxCol ).isMultiple( of: 2 ) {
                     context.setFillColor( Drawer.checkerboardLightColor )
                 } else {
                     context.setFillColor( Drawer.checkerboardDarkColor )

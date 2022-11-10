@@ -8,11 +8,11 @@
 import Foundation
 
 extension SudokuPuzzle.Solver {
-    // There are many places in the Solver where rows, columns, and blocks are treated equivalently.
+    // There are many places in the Solver where rows, columns, and boxes are treated equivalently.
     // So the Group class is used to represent them.  Additionally Group supports the available property,
     // the set of values still available to be distributed.
     class Group: CustomStringConvertible {
-        enum GroupType: String { case row, col = "column", block }
+        enum GroupType: String { case row, col = "column", box }
         
         let type:       GroupType
         var available = Set<Int>()
@@ -25,8 +25,8 @@ extension SudokuPuzzle.Solver {
                 return "row \(cells[0].row+1)"
             case .col:
                 return "column \(cells[0].col+1)"
-            case .block:
-                return "block \(cells[0].blockNumber+1)"
+            case .box:
+                return "box \(cells[0].box+1)"
             }
         }
         

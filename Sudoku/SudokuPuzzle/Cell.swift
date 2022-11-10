@@ -11,10 +11,10 @@ extension SudokuPuzzle {
     class Cell: Hashable, Identifiable {
         let row:         Int
         let col:         Int
-        let blockRow:    Int
-        let blockCol:    Int
-        let blockNumber: Int
-        let blockIndex:  Int
+        let boxRow:      Int
+        let boxCol:      Int
+        let box:         Int
+        let boxIndex:    Int
         var solved:      Int?
         var penciled =   Set<Int>()
         var changeable = false
@@ -26,10 +26,10 @@ extension SudokuPuzzle {
         init( levelInfo: Level, solved: Int? = nil, penciled: Set<Int> = [], row: Int, col: Int ) {
             self.row         = row
             self.col         = col
-            self.blockRow    = row / levelInfo.level
-            self.blockCol    = col / levelInfo.level
-            self.blockNumber = blockRow * levelInfo.level + blockCol
-            self.blockIndex  = row % levelInfo.level * levelInfo.level + col % levelInfo.level
+            self.boxRow      = row / levelInfo.level
+            self.boxCol      = col / levelInfo.level
+            self.box         = boxRow * levelInfo.level + boxCol
+            self.boxIndex    = row % levelInfo.level * levelInfo.level + col % levelInfo.level
             self.solved      = solved
             self.penciled    = penciled
         }

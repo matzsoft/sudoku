@@ -12,10 +12,10 @@ extension SudokuPuzzle {
         var puzzle: SudokuPuzzle
         var rows:   [Group]
         var cols:   [Group]
-        var blocks: [Group]
+        var boxes:  [Group]
         var groups: [Group]
         
-        // Make a copy of the input puzzle.  Set up the rows, cols, blocks, and groups arrays.
+        // Make a copy of the input puzzle.  Set up the rows, cols, boxes, and groups arrays.
         // Set up the invariants that will be maintained throughout the solution process.
         // Namely all cells in the puzzle copy are set as follows:
         // For cells marked solved - mark it as not changeable and empty its penciled set.
@@ -32,14 +32,14 @@ extension SudokuPuzzle {
                     cells: ( 0 ..< puzzle.limit ).map { row in grid[row][col] }
                 )
             }
-            blocks = ( 0 ..< puzzle.limit ).map { block in
+            boxes = ( 0 ..< puzzle.limit ).map { box in
                 Group(
-                    .block, levelInfo: puzzle.levelInfo,
-                    cells: newPuzzle.cells.filter( { $0.blockNumber == block } )
+                    .box, levelInfo: puzzle.levelInfo,
+                    cells: newPuzzle.cells.filter( { $0.box == box } )
                 )
             }
             self.puzzle = newPuzzle
-            groups = rows + cols + blocks
+            groups = rows + cols + boxes
             
             // Set changeable and penciled for each cell.
             for cell in self.puzzle.cells {
@@ -49,9 +49,9 @@ extension SudokuPuzzle {
                 } else {
                     cell.penciled = rows[cell.row].available
                         .intersection( cols[cell.col].available )
-                        .intersection( blocks[cell.blockNumber].available )
+                        .intersection( boxes[cell.box].available )
                 }
-                cell.canSee = Set( rows[cell.row].cells + cols[cell.col].cells + blocks[cell.blockNumber].cells ).subtracting( [ cell ] )
+                cell.canSee = Set( rows[cell.row].cells + cols[cell.col].cells + boxes[cell.box].cells ).subtracting( [ cell ] )
             }
         }
         
@@ -87,7 +87,7 @@ extension SudokuPuzzle {
                 // Phase 3 - process subsets of the available symbols within each group.
                 try nakedAndHiddenSubsets()
 
-                // Phase 4 - cross reference blocks against rows and columns.
+                // Phase 4 - cross reference boxes against rows and columns.
                 try intersectionRemoval()
 
                 // Phase 5 - the X-Wing strategy.
@@ -111,7 +111,7 @@ extension SudokuPuzzle {
             cell.penciled = []
             rows[ cell.row ].removeAvailable( index: index )
             cols[ cell.col ].removeAvailable( index: index )
-            blocks[ cell.blockNumber ].removeAvailable( index: index )
+            boxes[ cell.box ].removeAvailable( index: index )
             
             try validate()
         }
@@ -138,17 +138,17 @@ extension SudokuPuzzle {
             while try groups.first( where: hiddenSingleton ) != nil {}
         }
         
-        // Any block that has all its occurences of a symbol within a single row (or column) means
+        // Any box that has all its occurences of a symbol within a single row (or column) means
         // that all occurences of that symbol can be removed from the other cells in the row (or
         // column).  Conversely any row (or column) that has all its occurences of a symbol within
-        // a single block means that all occurences of that symbol can be removed from the other cells
-        // in the block.  To avoid infinite loops, we loop once through the blocks and once through
+        // a single box means that all occurences of that symbol can be removed from the other cells
+        // in the box.  To avoid infinite loops, we loop once through the boxes and once through
         // all the rows and columns.  Also note that no cells will be marked solved by this action.
         func intersectionRemoval() throws -> Void {
-            // Cross reference each block against the rows and columns.
-            for block in blocks {
-                for candidate in block.available {
-                    let cells = block.cells.filter { $0.penciled.contains( candidate ) }
+            // Cross reference each box against the rows and columns.
+            for box in boxes {
+                for candidate in box.available {
+                    let cells = box.cells.filter { $0.penciled.contains( candidate ) }
                     let row   = cells[0].row
                     let col   = cells[0].col
                     
@@ -166,14 +166,14 @@ extension SudokuPuzzle {
                 try validate()
             }
             
-            // Cross reference each row and column against the blocks.
+            // Cross reference each row and column against the boxes.
             for group in rows + cols {
                 for candidate in group.available {
                     let cells = group.cells.filter { $0.penciled.contains( candidate ) }
-                    let block = cells[0].blockNumber
+                    let box = cells[0].box
                     
-                    if cells.allSatisfy( { $0.blockNumber == block } ) {
-                        blocks[block].cells.filter { !cells.contains( $0 ) }.forEach {
+                    if cells.allSatisfy( { $0.box == box } ) {
+                        boxes[box].cells.filter { !cells.contains( $0 ) }.forEach {
                             $0.penciled.remove( candidate )
                         }
                     }
