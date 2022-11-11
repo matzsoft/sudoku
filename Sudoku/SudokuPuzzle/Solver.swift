@@ -83,24 +83,30 @@ extension SudokuPuzzle {
                 // Phase 2 - mark as solved all cells that have the only occurance of a symbol in its group.
                 try hiddenSingles()
                 if puzzle.isSolved { return true }
+                if !isStuck { continue }
 
                 // Phase 3 - process subsets of the available symbols within each group.
                 try nakedAndHiddenSubsets()
+                if !isStuck { continue }
 
                 // Phase 4 - cross reference boxes against rows and columns.
                 try intersectionRemoval()
+                if !isStuck { continue }
 
                 // Phase 5 - the X-Wing strategy.
-                if isStuck { try xWing() }
-                
+                try xWing()
+                if !isStuck { continue }
+
                 // Phase 6 - the Swordfish strategy.
-                if isStuck { try swordfish() }
+                try swordfish()
+                if !isStuck { continue }
 
                 // Phase 7 - the Y-Wing strategy.
-                if isStuck { try yWing() }
+                try yWing()
+                if !isStuck { continue }
 
                 // If no progess was made this loop then give up.
-                if isStuck { return false }
+                return false
             }
         }
         
