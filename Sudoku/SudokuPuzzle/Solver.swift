@@ -9,12 +9,14 @@ import Foundation
 
 extension SudokuPuzzle {
     struct Solver {
-        var puzzle: SudokuPuzzle
-        var rows:   [Group]
-        var cols:   [Group]
-        var boxes:  [Group]
-        var groups: [Group]
-        
+        var puzzle:        SudokuPuzzle
+        var rows:          [Group]
+        var cols:          [Group]
+        var boxes:         [Group]
+        var groups:        [Group]
+        var solvedCount:   Int
+        var penciledCount: Int
+
         // Make a copy of the input puzzle.  Set up the rows, cols, boxes, and groups arrays.
         // Set up the invariants that will be maintained throughout the solution process.
         // Namely all cells in the puzzle copy are set as follows:
@@ -53,8 +55,20 @@ extension SudokuPuzzle {
                 }
                 cell.canSee = Set( rows[cell.row].cells + cols[cell.col].cells + boxes[cell.box].cells ).subtracting( [ cell ] )
             }
+
+            solvedCount   = self.puzzle.solvedCount
+            penciledCount = self.puzzle.penciledCount
         }
         
+        mutating func markProgress() -> Void {
+            solvedCount   = puzzle.solvedCount
+            penciledCount = puzzle.penciledCount
+        }
+        
+        var madeProgress: Bool {
+            solvedCount != puzzle.solvedCount || penciledCount != puzzle.penciledCount
+        }
+
         func findConflicts() -> [Cell] {
             puzzle.cells.forEach { $0.conflict = false }
             groups.forEach { $0.markConflicts() }
@@ -68,13 +82,9 @@ extension SudokuPuzzle {
         // Note - I have found SudokuWiki.org to be a great resource for sample puzzles that illustrate
         // the various strategies.  They also have good explanations.  So I have decided to adopt their
         // nomenclature.
-        func solve() throws -> Bool {
+        mutating func solve() throws -> Bool {
             while true {
-                let solvedCount   = puzzle.solvedCount
-                let penciledCount = puzzle.penciledCount
-                var isStuck: Bool {
-                    solvedCount == puzzle.solvedCount && penciledCount == puzzle.penciledCount
-                }
+                markProgress()
 
                 // Phase 1 - mark as solved all cells with only one possiblity.
                 try nakedSingles()
@@ -83,27 +93,27 @@ extension SudokuPuzzle {
                 // Phase 2 - mark as solved all cells that have the only occurance of a symbol in its group.
                 try hiddenSingles()
                 if puzzle.isSolved { return true }
-                if !isStuck { continue }
+                if madeProgress { continue }
 
                 // Phase 3 - process subsets of the available symbols within each group.
                 try nakedAndHiddenSubsets()
-                if !isStuck { continue }
+                if madeProgress { continue }
 
                 // Phase 4 - cross reference boxes against rows and columns.
                 try intersectionRemoval()
-                if !isStuck { continue }
+                if madeProgress { continue }
 
                 // Phase 5 - the X-Wing strategy.
                 try xWing()
-                if !isStuck { continue }
+                if madeProgress { continue }
 
                 // Phase 6 - the Swordfish strategy.
                 try swordfish()
-                if !isStuck { continue }
+                if madeProgress { continue }
 
                 // Phase 7 - the Y-Wing strategy.
                 try yWing()
-                if !isStuck { continue }
+                if madeProgress { continue }
 
                 // If no progess was made this loop then give up.
                 return false
@@ -365,12 +375,12 @@ extension SudokuPuzzle {
                         let removees = pair.reduce( Set( puzzle.cells ) ) {
                             $0.intersection( $1.canSee! )
                         }.subtracting( [ candidate ] )
-                            .filter { $0.penciled.contains( removal ) }
                         
-                        if removees.isEmpty { continue }
                         removees.forEach { $0.penciled.remove( removal ) }
-                        try validate()
-                        return
+                        if madeProgress {
+                            try validate()
+                            return
+                        }
                     }
                 }
             }
