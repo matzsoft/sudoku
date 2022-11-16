@@ -115,6 +115,10 @@ extension SudokuPuzzle {
                 try yWing()
                 if madeProgress { continue }
 
+                // Phase 8 - the Single's Chains strategy.
+                try singlesChains()
+                if madeProgress { continue }
+                
                 // If no progess was made this loop then give up.
                 return false
             }
@@ -385,6 +389,77 @@ extension SudokuPuzzle {
                 }
             }
         }
+        
+        // The Single's Chains strategy relies on the fact that whenever a group has a symbol that
+        // appears in exactly two cell's pencilled sets, one of those cells will be solved with that
+        // symbol and the other not.  The strategy finds all such pairs for each symbol and then links
+        // the pairs into chains.  A chain is a network of cells in which if any cell is solved with
+        // that symbol its neighbors can be eliminated.  The chain is stored as 2 sets, the greens and
+        // the blues.  If any of the green cells is solved with the symbol, then they all are and the
+        // blues can all be elimanted.  The reverse also holds of course.
+        //
+        // Once a chain as been identified there are 2 ways to eliminate possibilities:
+        // Rule 4 - any cell that can see a green cell and a blue cell can have the symbol elimated
+        // from its penciled set.
+        // Rule 2 - any group that has more than 1 cell of either color can have the symbol removed
+        // from the penciled set of all those cells.
+        //
+        // But when a Single's Chain is found and some penciled entries are removed, the all set and
+        // the pairs set are potentially invalidated so it is best to return at that point.  This is an
+        // expensive operation so it is only performed when other methods are not advancing the
+        // solution.  Also note that no cells will be marked solved by this action.
+        func singlesChains() throws -> Void {
+            for index in 0 ..< puzzle.limit {
+                let all = Set( puzzle.cells.filter { $0.penciled.contains( index ) } )
+                var pairs = groups.reduce( into: Set<Set<Cell>>() ) { pairs, group in
+                    let matches = group.unsolved.filter { $0.penciled.contains( index ) }
+                    if matches.count == 2 { pairs.insert( Set( matches ) ) }
+                }
+                
+                while let start = pairs.first {
+                    pairs.removeFirst()
+                    var greens = Set( [ start.first! ] )
+                    var blues = start.subtracting( greens )
+                    
+                    while let next = pairs.first(
+                        where: { !$0.intersection( greens ).isEmpty || !$0.intersection( blues ).isEmpty } )
+                    {
+                        pairs.remove( next )
+                        let green = next.intersection( greens )
+                        let blue = next.intersection( blues )
+                        guard green.count < 2 else { throw SolverError.inconsistentBiLocation( green ) }
+                        guard blue.count < 2 else { throw SolverError.inconsistentBiLocation( blue ) }
+                        
+                        if green.count == 1 {
+                            if blue.isEmpty {
+                                blues.formUnion( next.subtracting( green ) )
+                            }
+                        } else if blue.count == 1 {
+                            greens.formUnion( next.subtracting( blue ) )
+                        }
+                    }
+                    let candidates = all.subtracting( greens ).subtracting( blues )
+                    for candidate in candidates {
+                        guard let canSee = candidate.canSee else { continue }
+                                
+                        if !canSee.intersection( greens ).isEmpty && !canSee.intersection( blues ).isEmpty {
+                            candidate.penciled.remove( index )
+                        }
+                    }
+                    for group in groups {
+                        let green = Set( group.unsolved ).intersection( greens )
+                        let blue = Set( group.unsolved ).intersection( blues )
+                        
+                        if green.count > 1 { green.forEach { $0.penciled.remove( index ) } }
+                        if blue.count > 1 { blue.forEach { $0.penciled.remove( index ) } }
+                    }
+                    if madeProgress {
+                        try validate()
+                        return
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -396,6 +471,7 @@ extension SudokuPuzzle.Solver {
         case excessPencilled( Group )
         case insufficientPencilled( Group )
         case inconsistentPencilled( Group )
+        case inconsistentBiLocation( Set<SudokuPuzzle.Cell> )
         
         var description: String {
             switch self {
@@ -409,6 +485,9 @@ extension SudokuPuzzle.Solver {
                 return "The available set is larger than the penciled union for \(group)."
             case .inconsistentPencilled( let group ):
                 return "The available set and penciled union for \(group)."
+            case .inconsistentBiLocation( let set ):
+                let list = Array( set )
+                return "Inconsistent bi-location link between \(list[0]) and \(list[1])."
             }
         }
     }

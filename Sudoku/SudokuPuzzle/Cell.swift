@@ -8,7 +8,7 @@
 import Foundation
 
 extension SudokuPuzzle {
-    class Cell: Hashable, Identifiable {
+    class Cell: Hashable, Identifiable, CustomStringConvertible {
         let row:         Int
         let col:         Int
         let boxRow:      Int
