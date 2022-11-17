@@ -8,7 +8,7 @@
 import Foundation
 
 extension SudokuPuzzle {
-    struct Solver {
+    class Solver {
         var puzzle:        SudokuPuzzle
         var rows:          [Group]
         var cols:          [Group]
@@ -16,6 +16,8 @@ extension SudokuPuzzle {
         var groups:        [Group]
         var solvedCount:   Int
         var penciledCount: Int
+
+        var strategies = [Strategy]()
 
         // Make a copy of the input puzzle.  Set up the rows, cols, boxes, and groups arrays.
         // Set up the invariants that will be maintained throughout the solution process.
@@ -58,9 +60,20 @@ extension SudokuPuzzle {
 
             solvedCount   = self.puzzle.solvedCount
             penciledCount = self.puzzle.penciledCount
+
+            strategies = [
+                Strategy( "Naked Singles",            nakedSingles,         canSolve: true, restart: false ),
+                Strategy( "Hidden Singles",           hiddenSingles,        canSolve: true                 ),
+                Strategy( "Naked and Hidden Subsets", nakedAndHiddenSubsets                                ),
+                Strategy( "Intersection Removal",     intersectionRemoval                                  ),
+                Strategy( "X-Wing",                   xWing                                                ),
+                Strategy( "Swordfish",                swordfish                                            ),
+                Strategy( "Y-Wing",                   yWing                                                ),
+                Strategy( "Single's Chains",          singlesChains                                        ),
+            ]
         }
         
-        mutating func markProgress() -> Void {
+        func markProgress() -> Void {
             solvedCount   = puzzle.solvedCount
             penciledCount = puzzle.penciledCount
         }
@@ -82,46 +95,16 @@ extension SudokuPuzzle {
         // Note - I have found SudokuWiki.org to be a great resource for sample puzzles that illustrate
         // the various strategies.  They also have good explanations.  So I have decided to adopt their
         // nomenclature.
-        mutating func solve() throws -> Bool {
-            while true {
+        func solve() throws -> Bool {
+            repeat {
                 markProgress()
-
-                // Phase 1 - mark as solved all cells with only one possiblity.
-                try nakedSingles()
-                if puzzle.isSolved { return true }
-                
-                // Phase 2 - mark as solved all cells that have the only occurance of a symbol in its group.
-                try hiddenSingles()
-                if puzzle.isSolved { return true }
-                if madeProgress { continue }
-
-                // Phase 3 - process subsets of the available symbols within each group.
-                try nakedAndHiddenSubsets()
-                if madeProgress { continue }
-
-                // Phase 4 - cross reference boxes against rows and columns.
-                try intersectionRemoval()
-                if madeProgress { continue }
-
-                // Phase 5 - the X-Wing strategy.
-                try xWing()
-                if madeProgress { continue }
-
-                // Phase 6 - the Swordfish strategy.
-                try swordfish()
-                if madeProgress { continue }
-
-                // Phase 7 - the Y-Wing strategy.
-                try yWing()
-                if madeProgress { continue }
-
-                // Phase 8 - the Single's Chains strategy.
-                try singlesChains()
-                if madeProgress { continue }
-                
-                // If no progess was made this loop then give up.
-                return false
-            }
+                for strategy in strategies {
+                    try strategy.method()
+                    if strategy.canSolve && puzzle.isSolved { return true }
+                    if strategy.restart && madeProgress { break }
+                }
+            } while madeProgress
+            return false
         }
         
         // Mark a cell as solved with a specific value.  This also includes emptying the penciled set
@@ -464,7 +447,24 @@ extension SudokuPuzzle {
 }
 
 
-extension SudokuPuzzle.Solver {    
+extension SudokuPuzzle.Solver {
+    struct Strategy {
+        let label:    String
+        let method:   () throws -> Void
+        let canSolve: Bool
+        let restart:  Bool
+
+        init(
+            _ label: String, _ method: @escaping () throws -> Void,
+            canSolve: Bool = false, restart: Bool = true
+        ) {
+            self.label    = label
+            self.method   = method
+            self.canSolve = canSolve
+            self.restart  = restart
+        }
+    }
+    
     enum SolverError: Error, CustomStringConvertible {
         case excessAvailable( Group )
         case insufficientAvailable( Group )
