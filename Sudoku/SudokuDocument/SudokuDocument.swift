@@ -43,7 +43,7 @@ final class SudokuDocument: ReferenceFileDocument {
         solver = SudokuPuzzle.Solver( puzzle: puzzle )
     }
 
-    static var readableContentTypes: [UTType] { [.text] }
+    static var readableContentTypes: [UTType] { [.plainText] }
 
     init( configuration: ReadConfiguration ) throws {
         guard let data = configuration.file.regularFileContents,
