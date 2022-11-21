@@ -17,20 +17,7 @@ func puzzleString( from image: NSImage ) throws -> String {
           let documentImage = documentDetector( image: pgImage )
     else { throw CocoaError( .fileReadCorruptFile ) }
 
-    let xRuns = findRunsByRow( image: documentImage )
-    let yRuns = findRunsByCol( image: documentImage )
-//    let horz = findHorizontal( lines: xRuns )
-//    let vert = findVertical( lines: yRuns )
-    let horz = runHistogram( runs: xRuns )
-    let vert = runHistogram( runs: yRuns )
-    
-//    let bounds = detectPuzzle( xRuns: xRuns, yRuns: yRuns )
-//    let white = CGColor( red: 1, green: 1, blue: 1, alpha: 1 )
-//    let garbage = eliminateGarbage( bounds: bounds, runs: xRuns + yRuns )
-//    let basePath = "/Users/markj/Desktop/cells/"
-//    let url = URL( fileURLWithPath: "\(basePath)puzzle.png" )
-//    documentImage.draw( lines: garbage, color: white ).write( to: url )
-    guard let cells = Grid( horizontal: horz, vertical: vert ) else {
+    guard let cells = Grid( image: documentImage ) else {
         throw CocoaError( .fileReadCorruptFile )
     }
     
@@ -144,113 +131,6 @@ func findRunsByCol( image: PGImage ) -> [[PGOLine]] {
 }
 
 
-func findHorizontal( /*image: PGImage,*/ lines: [[PGOLine]] ) -> [PGOLine] {
-    let vertCount = findCount( lines: lines )
-//    let white = CGColor( red: 1, green: 1, blue: 1, alpha: 1 )
-
-    var index = 0
-    var horizontal = [PGOLine]()
-    var accumulator = RowAccumulator()
-
-    while index < lines.count {
-        while index < lines.count && lines[index].count != vertCount {
-            accumulator.add( row: lines[index] )
-            index += 1
-        }
-        horizontal.append( contentsOf: accumulator.results() )
-//        if index < lines.count {
-////            image.draw( lines: lines[index], color: white )
-//        }
-        
-        while index < lines.count && lines[index].count == vertCount {
-            index += 1
-        }
-        
-        if index < lines.count && lines[index].count > vertCount {
-            if index + 1 < lines.count && lines[index+1].count > vertCount {
-                while index < lines.count && lines[index].count != vertCount {
-                    index += 1
-                }
-                while index < lines.count && lines[index].count == vertCount {
-                    index += 1
-                }
-            }
-        }
-        
-//        if 0 < index && index < lines.count {
-////            image.draw( lines: lines[index-1], color: white )
-//        }
-    }
-    
-    return horizontal
-}
-
-
-func findVertical( /*image: PGImage,*/ lines: [[PGOLine]] ) -> [PGOLine] {
-    let horzCount = findCount( lines: lines )
-//    let white = CGColor( red: 1, green: 1, blue: 1, alpha: 1 )
-
-    var index = 0
-    var vertical = [PGOLine]()
-    var accumulator = ColAccumulator()
-
-    while index < lines.count {
-        while index < lines.count && lines[index].count != horzCount {
-            accumulator.add( col: lines[index] )
-            index += 1
-        }
-        vertical.append( contentsOf: accumulator.results() )
-//        if index < lines.count {
-////            image.draw( lines: lines[index], color: white )
-//        }
-
-        while index < lines.count && lines[index].count == horzCount {
-            index += 1
-        }
-        
-        if index < lines.count && lines[index].count > horzCount {
-            if index + 1 < lines.count && lines[index+1].count > horzCount {
-                while index < lines.count && lines[index].count != horzCount {
-                    index += 1
-                }
-                while index < lines.count && lines[index].count == horzCount {
-                    index += 1
-                }
-            }
-        }
-        
-//        if 0 < index && index < lines.count {
-////            image.draw( lines: lines[index-1], color: white )
-//        }
-    }
-    
-    return vertical
-}
-
-
-func findCount( lines: [[PGOLine]] ) -> Int {
-    var last = 0
-    
-    for line in lines {
-        if line.count != 1 && line.count == last { return last }
-        last = line.count
-    }
-    
-    return 666
-}
-
-
-func detectPuzzle( xRuns: [[PGOLine]], yRuns: [[PGOLine]] ) -> CGRect {
-    let xLines = runHistogram( runs: xRuns )
-    let yLines = runHistogram( runs: yRuns )
-    let xMin = xLines.min( by: { $0.start.x < $1.start.x } )!.start.x
-    let xMax = xLines.max( by: { $0.end.x < $1.end.x } )!.end.x
-    let yMin = yLines.min( by: { $0.start.y < $1.start.y } )!.start.y
-    let yMax = yLines.max( by: { $0.end.y < $1.end.y } )!.end.y
-    
-    return CGRect( x: xMin, y: yMin, width: xMax - xMin, height: yMax - yMin )
-}
-
 func runHistogram( runs: [[PGOLine]] ) -> [PGOLine] {
     let histogram = runs.reduce( into: [ CGFloat : [PGOLine] ]() ) { dict, line in
         line.forEach { dict[ $0.length, default: [] ].append( $0 ) }
@@ -260,16 +140,13 @@ func runHistogram( runs: [[PGOLine]] ) -> [PGOLine] {
     )!.value
 }
 
-func eliminateGarbage( bounds: CGRect, runs: [[PGOLine]] ) -> [PGOLine] {
-    return runs.flatMap { $0.filter{ !bounds.contains( $0.start ) && !bounds.contains( $0.end ) } }
-}
 
 @available(macOS 10.15, *)
 func ocrCells( image: PGImage, grid: Grid ) -> String {
     let basePath = "/Users/markj/Desktop/cells/"
     image.write( to: URL( fileURLWithPath: "\(basePath)document.png" ) )
-    let boxes = grid.cellGrid.map { row -> [CGRect] in
-        row.map { $0.flipped( to: image.size ) }
+    let boxes = grid.grid.map { row -> [CGRect] in
+        row.map { $0.cgRect.flipped( to: image.size ) }
     }
     
     let dork = boxes.enumerated().map { ( rowIndex, row ) in
@@ -304,7 +181,7 @@ func ocrDetector( image: PGImage, cellRect: CGRect, url: URL ) -> String {
     let ocrRequestHandler = VNImageRequestHandler( cgImage: cellImage )
     let ocrRequest = VNRecognizeTextRequest()
 
-    writeCGImage( cellImage, to: url )
+    cellImage.write( to: url )
     do {
         try ocrRequestHandler.perform( [ ocrRequest ] )
     } catch {
@@ -314,16 +191,6 @@ func ocrDetector( image: PGImage, cellRect: CGRect, url: URL ) -> String {
     guard let textBlocks = ocrRequest.results else { return "." }
     let retval = textBlocks.map { $0.topCandidates(1).first!.string }.joined()
     return retval
-}
-
-
-// Consider making an extension to CGImage.
-@discardableResult func writeCGImage( _ image: CGImage, to destinationURL: URL ) -> Bool {
-    guard let destination = CGImageDestinationCreateWithURL( destinationURL as CFURL, UTType.png.identifier as CFString, 1, nil )
-    else { return false }
-    
-    CGImageDestinationAddImage( destination, image, nil )
-    return CGImageDestinationFinalize( destination )
 }
 
 
@@ -354,54 +221,16 @@ func getCellImage( documentImage: PGImage, cellRect: CGRect ) -> CGImage? {
 }
 
 
-struct RowAccumulator {
-    var start = Int.max
-    var end = Int.min
-    var lines = [PGOLine]()
-    
-    mutating func add( row: [PGOLine] ) -> Void {
-        start = min( start, Int( row.first!.start.x.rounded() ) )
-        end = max( end, Int( row.last!.end.x.rounded() ) )
-        lines.append( PGOLine( y: Int( row.first!.start.y.rounded() ), start: start, end: end ) )
-    }
-    
-    mutating func results() -> [PGOLine] {
-        let results = lines.map { PGOLine( y: Int( $0.start.y.rounded() ), start: start, end: end ) }
-        
-        start = Int.max
-        end = Int.min
-        lines = []
-        
-        return results
-    }
-}
-
-
-struct ColAccumulator {
-    var start = Int.max
-    var end = Int.min
-    var lines = [PGOLine]()
-    
-    mutating func add( col: [PGOLine] ) -> Void {
-        start = min( start, Int( col.first!.start.y.rounded() ) )
-        end = max( end, Int( col.last!.end.y.rounded() ) )
-        lines.append( PGOLine( x: Int( col.first!.start.x.rounded() ), start: start, end: end ) )
-    }
-    
-    mutating func results() -> [PGOLine] {
-        let results = lines.map { PGOLine( x: Int( $0.start.x.rounded() ), start: start, end: end ) }
-        
-        start = Int.max
-        end = Int.min
-        lines = []
-        
-        return results
-    }
-}
-
-
 extension CGImage {
     var size: CGSize { return CGSize( width: width, height: height ) }
+
+    @discardableResult func write( to destinationURL: URL ) -> Bool {
+        guard let destination = CGImageDestinationCreateWithURL( destinationURL as CFURL, UTType.png.identifier as CFString, 1, nil )
+        else { return false }
+        
+        CGImageDestinationAddImage( destination, self, nil )
+        return CGImageDestinationFinalize( destination )
+    }
 }
 
 

@@ -128,22 +128,25 @@ class PGImage {
 
 
 struct PGOLine {
-    let start: CGPoint
-    let end:   CGPoint
+    let x: ClosedRange<Int>
+    let y: ClosedRange<Int>
+    
+    var start: CGPoint { CGPoint( x: x.lowerBound, y: y.lowerBound ) }
+    var end:   CGPoint { CGPoint( x: x.upperBound, y: y.upperBound ) }
     
     init( y: Int, start: Int, end: Int ) {
-        self.start = CGPoint( x: start, y: y )
-        self.end   = CGPoint( x: end,   y: y )
+        self.x = start ... end
+        self.y = y ... y
     }
     
     init( x: Int, start: Int, end: Int ) {
-        self.start = CGPoint( x: x, y: start )
-        self.end   = CGPoint( x: x, y: end )
+        self.x = x ... x
+        self.y = start ... end
     }
     
     var length: CGFloat {
-        if start.x == end.x { return end.y - start.y }
-        return end.x - start.x
+        if x.lowerBound == x.upperBound { return CGFloat( y.upperBound - y.lowerBound + 1 ) }
+        return CGFloat( x.upperBound - x.lowerBound + 1 )
     }
 }
 
@@ -151,4 +154,11 @@ struct PGOLine {
 struct PGRect {
     let x: ClosedRange<Int>
     let y: ClosedRange<Int>
+    
+    var cgRect: CGRect {
+        CGRect(
+            x: x.lowerBound, y: y.lowerBound,
+            width: x.upperBound - x.lowerBound + 1, height: y.upperBound - y.lowerBound + 1
+        )
+    }
 }

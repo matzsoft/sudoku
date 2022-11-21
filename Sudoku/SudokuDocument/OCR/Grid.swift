@@ -9,60 +9,43 @@
 import Foundation
 
 class Grid {
-    let rows: [ClosedRange<CGFloat>]
-    let cols: [ClosedRange<CGFloat>]
+    let grid: [[PGRect]]
     
-//    init( rows: [ClosedRange<CGFloat>], cols: [ClosedRange<CGFloat>] ) {
-//        self.rows = rows
-//        self.cols = cols
-//    }
-    
-    init?( horizontal: [PGOLine], vertical: [PGOLine] ) {
-        guard !horizontal.isEmpty else { return nil }
-        guard !vertical.isEmpty else { return nil }
+    init?( image: PGImage ) {
+        let xRuns  = findRunsByRow( image: image )
+        let yRuns  = findRunsByCol( image: image )
+        let xLines = runHistogram( runs: xRuns )
+        let yLines = runHistogram( runs: yRuns )
         
-        rows = findRows( horizontal: horizontal ).reversed()
-        cols = findCols( vertical: vertical )
-    }
-    
-    subscript( row: Int, col: Int ) -> CGRect {
-        CGRect(
-            x: rows[row].lowerBound, y: cols[col].lowerBound,
-            width: cols[col].upperBound - cols[col].lowerBound,
-            height: rows[row].upperBound - rows[row].lowerBound
-        )
-    }
-    
-    var cellGrid: [[CGRect]] {
-        rows.map { row -> [CGRect] in
-            cols.map { col -> CGRect in
-                CGRect(
-                    x: col.lowerBound, y: row.lowerBound,
-                    width: col.upperBound - col.lowerBound, height: row.upperBound - row.lowerBound
-                )
+        guard !xLines.isEmpty else { return nil }
+        guard !yLines.isEmpty else { return nil }
+        
+        let rows = findRows( horizontal: xLines ).reversed()
+        let cols = findCols( vertical: yLines )
+        
+        grid = rows.map { row -> [PGRect] in
+            cols.map { col -> PGRect in
+                PGRect( x: col.lowerBound ... col.upperBound, y: row.lowerBound ... row.upperBound )
             }
         }
     }
     
-    var cellList: [CGRect] {
-        rows.flatMap { row -> [CGRect] in
-            cols.map { col -> CGRect in
-                CGRect(
-                    x: col.lowerBound, y: row.lowerBound,
-                    width: col.upperBound - col.lowerBound, height: row.upperBound - row.lowerBound
-                )
-            }
-        }
+    subscript( row: Int, col: Int ) -> PGRect {
+        grid[row][col]
+    }
+    
+    var cellList: [PGRect] {
+        grid.flatMap { $0 }
     }
 }
 
 
-fileprivate func findRows( horizontal: [PGOLine] ) -> [ClosedRange<CGFloat>] {
-    var rows = [ ClosedRange<CGFloat> ]()
+fileprivate func findRows( horizontal: [PGOLine] ) -> [ClosedRange<Int>] {
+    var rows = [ ClosedRange<Int> ]()
     
     for index in horizontal.indices.dropLast() {
         if horizontal[index].start.y != horizontal[index+1].start.y - 1 {
-            rows.append( horizontal[index].start.y + 1 ... horizontal[index+1].start.y - 1 )
+            rows.append( horizontal[index].y.lowerBound + 1 ... horizontal[index+1].y.lowerBound - 1 )
         }
     }
     
@@ -70,12 +53,12 @@ fileprivate func findRows( horizontal: [PGOLine] ) -> [ClosedRange<CGFloat>] {
 }
 
 
-fileprivate func findCols( vertical: [PGOLine] ) -> [ClosedRange<CGFloat>] {
-    var cols = [ ClosedRange<CGFloat> ]()
+fileprivate func findCols( vertical: [PGOLine] ) -> [ClosedRange<Int>] {
+    var cols = [ ClosedRange<Int> ]()
     
     for index in vertical.indices.dropLast() {
         if vertical[index].start.x != vertical[index+1].start.x - 1 {
-            cols.append( vertical[index].start.x + 1 ... vertical[index+1].start.x - 1 )
+            cols.append( vertical[index].x.lowerBound + 1 ... vertical[index+1].x.lowerBound - 1 )
         }
     }
     
