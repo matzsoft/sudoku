@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		DD525EFB2926DFEE00006061 /* Basic.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD525EFA2926DFEE00006061 /* Basic.swift */; };
 		DD525EFD2926E0A800006061 /* Tough.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD525EFC2926E0A800006061 /* Tough.swift */; };
+		DD525EFF292715BC00006061 /* OCR.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD525EFE292715BC00006061 /* OCR.swift */; };
+		DD525F02292718C400006061 /* PixelGraphics.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD525F01292718C400006061 /* PixelGraphics.swift */; };
+		DD525F042927317600006061 /* Grid.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD525F032927317600006061 /* Grid.swift */; };
 		DD52AC0B28D7FA850063F450 /* SudokuApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD52AC0A28D7FA850063F450 /* SudokuApp.swift */; };
 		DD52AC0D28D7FA850063F450 /* SudokuDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD52AC0C28D7FA850063F450 /* SudokuDocument.swift */; };
 		DD52AC0F28D7FA850063F450 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD52AC0E28D7FA850063F450 /* ContentView.swift */; };
@@ -47,6 +50,9 @@
 /* Begin PBXFileReference section */
 		DD525EFA2926DFEE00006061 /* Basic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Basic.swift; sourceTree = "<group>"; };
 		DD525EFC2926E0A800006061 /* Tough.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tough.swift; sourceTree = "<group>"; };
+		DD525EFE292715BC00006061 /* OCR.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCR.swift; sourceTree = "<group>"; };
+		DD525F01292718C400006061 /* PixelGraphics.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PixelGraphics.swift; sourceTree = "<group>"; };
+		DD525F032927317600006061 /* Grid.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Grid.swift; sourceTree = "<group>"; };
 		DD52AC0728D7FA850063F450 /* Sudoku.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Sudoku.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD52AC0A28D7FA850063F450 /* SudokuApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SudokuApp.swift; sourceTree = "<group>"; };
 		DD52AC0C28D7FA850063F450 /* SudokuDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SudokuDocument.swift; sourceTree = "<group>"; };
@@ -103,6 +109,16 @@
 				DD525EFC2926E0A800006061 /* Tough.swift */,
 			);
 			path = Solver;
+			sourceTree = "<group>";
+		};
+		DD525F002927187200006061 /* OCR */ = {
+			isa = PBXGroup;
+			children = (
+				DD525F032927317600006061 /* Grid.swift */,
+				DD525F01292718C400006061 /* PixelGraphics.swift */,
+				DD525EFE292715BC00006061 /* OCR.swift */,
+			);
+			path = OCR;
 			sourceTree = "<group>";
 		};
 		DD52ABFE28D7FA850063F450 = {
@@ -184,6 +200,7 @@
 				DD52AC3928D7FF960063F450 /* Drawer.swift */,
 				DD52AC4428D8F0630063F450 /* KeyboardHandling.swift */,
 				DD52AC0C28D7FA850063F450 /* SudokuDocument.swift */,
+				DD525F002927187200006061 /* OCR */,
 			);
 			path = SudokuDocument;
 			sourceTree = "<group>";
@@ -318,6 +335,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DD525F02292718C400006061 /* PixelGraphics.swift in Sources */,
+				DD525EFF292715BC00006061 /* OCR.swift in Sources */,
 				DD7B3DCF2907690D0004BE7B /* Group.swift in Sources */,
 				DDC6F7CC28E3F3C1001CB49E /* Solver.swift in Sources */,
 				DD52AC3E28D7FF960063F450 /* Drawer.swift in Sources */,
@@ -327,6 +346,7 @@
 				DD52AC4528D8F0630063F450 /* KeyboardHandling.swift in Sources */,
 				DD52AC3D28D7FF960063F450 /* Cell.swift in Sources */,
 				DD52AC0D28D7FA850063F450 /* SudokuDocument.swift in Sources */,
+				DD525F042927317600006061 /* Grid.swift in Sources */,
 				DD525EFB2926DFEE00006061 /* Basic.swift in Sources */,
 				DD52AC0F28D7FA850063F450 /* ContentView.swift in Sources */,
 				DD52AC4128D7FF960063F450 /* Level.swift in Sources */,
