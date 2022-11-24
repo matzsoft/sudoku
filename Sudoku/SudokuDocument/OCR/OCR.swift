@@ -65,15 +65,16 @@ public func perspectiveCorrectedImage(
 
 @available(macOS 10.15, *)
 func ocrCells( image: PGImage, grid: Grid ) -> String {
-    let basePath = "/Users/markj/Desktop/cells/"
-    image.write( to: URL( fileURLWithPath: "\(basePath)document.png" ) )
+    let desktop = FileManager.default.urls( for: .desktopDirectory, in: .userDomainMask )[0]
+    let baseURL = desktop.appendingPathComponent( "cells" )
+    image.write( to: baseURL.appendingPathComponent( "document.png" ) )
     let boxes = grid.grid.map { row -> [CGRect] in
         row.map { $0.cgRect.flipped( to: image.size ) }
     }
     
     return boxes.enumerated().map { ( rowIndex, row ) in
         row.enumerated().map { ( colIndex, box ) in
-            let url = URL( fileURLWithPath: "\(basePath)cell\(rowIndex+1)\(colIndex+1).png" )
+            let url = baseURL.appendingPathComponent( "cell\(rowIndex+1)\(colIndex+1).png" )
             let rawOCR = ocrDetector( image: image, cellRect: box, url: url )
             switch rawOCR {
             case "T":
