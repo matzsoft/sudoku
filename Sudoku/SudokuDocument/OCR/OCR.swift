@@ -63,84 +63,6 @@ public func perspectiveCorrectedImage(
 }
 
 
-func findRunsByRow( image: PGImage ) -> [[PGOLine]] {
-    enum State { case black, white }
-    let bounds = image.bounds
-    let rangeY = Int( bounds.minY.rounded() ) ... Int( bounds.maxY.rounded() )
-    return rangeY.map { y -> [PGOLine] in
-        let rangeX = Int( bounds.minX.rounded() ) ... Int( bounds.maxX.rounded() )
-        var state = State.white
-        var start = 0
-        var list = [PGOLine]()
-        
-        for x in rangeX {
-            switch state {
-            case .white:
-                if image[x,y] < 128 {
-                    start = x
-                    state = .black
-                }
-            case .black:
-                if image[x,y] > 127 {
-                    state = .white
-                    list.append( PGOLine( y: y, start: start, end: x - 1 ) )
-                }
-            }
-        }
-        
-        if state == .black {
-            list.append( PGOLine( y: y, start: start, end: rangeX.upperBound ) )
-        }
-        
-        return list
-    }.filter { !$0.isEmpty }
-}
-
-
-func findRunsByCol( image: PGImage ) -> [[PGOLine]] {
-    enum State { case black, white }
-    let bounds = image.bounds
-    let rangeX = Int( bounds.minX.rounded() ) ... Int( bounds.maxX.rounded() )
-    return rangeX.map { x -> [PGOLine] in
-        let rangeY = Int( bounds.minY.rounded() ) ... Int( bounds.maxY.rounded() )
-        var state = State.white
-        var start = 0
-        var list = [PGOLine]()
-        
-        for y in rangeY {
-            switch state {
-            case .white:
-                if image[x,y] < 128 {
-                    start = y
-                    state = .black
-                }
-            case .black:
-                if image[x,y] > 127 {
-                    state = .white
-                    list.append( PGOLine( x: x, start: start, end: y - 1 ) )
-                }
-            }
-        }
-        
-        if state == .black {
-            list.append( PGOLine( x: x, start: start, end: rangeY.upperBound ) )
-        }
-        
-        return list
-    }.filter { !$0.isEmpty }
-}
-
-
-func runHistogram( runs: [[PGOLine]] ) -> [PGOLine] {
-    let histogram = runs.reduce( into: [ CGFloat : [PGOLine] ]() ) { dict, line in
-        line.forEach { dict[ $0.length, default: [] ].append( $0 ) }
-    }
-    return histogram.max(
-        by: { $0.key * CGFloat( $0.value.count ) < $1.key * CGFloat( $1.value.count ) }
-    )!.value
-}
-
-
 @available(macOS 10.15, *)
 func ocrCells( image: PGImage, grid: Grid ) -> String {
     let basePath = "/Users/markj/Desktop/cells/"
@@ -149,7 +71,7 @@ func ocrCells( image: PGImage, grid: Grid ) -> String {
         row.map { $0.cgRect.flipped( to: image.size ) }
     }
     
-    let dork = boxes.enumerated().map { ( rowIndex, row ) in
+    return boxes.enumerated().map { ( rowIndex, row ) in
         row.enumerated().map { ( colIndex, box ) in
             let url = URL( fileURLWithPath: "\(basePath)cell\(rowIndex+1)\(colIndex+1).png" )
             let rawOCR = ocrDetector( image: image, cellRect: box, url: url )
@@ -162,14 +84,7 @@ func ocrCells( image: PGImage, grid: Grid ) -> String {
                 return rawOCR
             }
         }
-    }
-//    let dork = boxes.map { row in
-//        row.map { rect in
-//            ocrDetector( image: image, cellRect: rect )
-//        }
-//    }
-    
-    return dork.map { row in
+    }.map { row in
         row.joined()
     }.joined( separator: "\n" )
 }

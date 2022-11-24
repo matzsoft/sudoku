@@ -144,9 +144,9 @@ struct PGOLine {
         self.y = start ... end
     }
     
-    var length: CGFloat {
-        if x.lowerBound == x.upperBound { return CGFloat( y.upperBound - y.lowerBound + 1 ) }
-        return CGFloat( x.upperBound - x.lowerBound + 1 )
+    var length: Int {
+        if x.lowerBound == x.upperBound { return y.upperBound - y.lowerBound + 1 }
+        return x.upperBound - x.lowerBound + 1
     }
 }
 
