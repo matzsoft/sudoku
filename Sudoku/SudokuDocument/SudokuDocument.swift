@@ -43,8 +43,7 @@ final class SudokuDocument: ReferenceFileDocument {
         solver = SudokuPuzzle.Solver( puzzle: puzzle )
     }
 
-    static var readableContentTypes: [UTType] { [.plainText, .png, .jpeg, .gif ] }
-    static var writableContentTypes: [UTType] { [.plainText] }
+    static var readableContentTypes: [UTType] { [ .plainText ] }
 
     convenience init( configuration: ReadConfiguration ) throws {
         switch configuration.contentType {
@@ -55,13 +54,6 @@ final class SudokuDocument: ReferenceFileDocument {
                 throw CocoaError( .fileReadCorruptFile )
             }
             try self.init( string: string )
-        case .gif, .jpeg, .png:
-            guard let data = configuration.file.regularFileContents,
-                  let image = NSImage( data: data )
-            else {
-                throw CocoaError( .fileReadCorruptFile )
-            }
-            try self.init( image: image )
         default:
             throw CocoaError( .fileReadUnsupportedScheme )
         }
@@ -89,10 +81,6 @@ final class SudokuDocument: ReferenceFileDocument {
             }
         }
         solver = SudokuPuzzle.Solver( puzzle: puzzle )
-    }
-    
-    convenience init( image: NSImage ) throws {
-        try self.init( string: puzzleString( from: image ) )
     }
     
     func snapshot( contentType: UTType ) throws -> Data {
