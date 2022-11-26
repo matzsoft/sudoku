@@ -43,7 +43,8 @@ struct SudokuApp: App {
 func make( text: URL, from graphics: URL ) throws -> Void {
     guard let image = NSImage( contentsOf: graphics ) else {
         throw CocoaError( .fileReadCorruptFile ) }
-    let string = try puzzleString( from: image )
+    let ocr = try OCR( from: image )
+    let string = try ocr.puzzleString()
     try string.write( to: text, atomically: true, encoding: .utf8 )
     
     Task {
