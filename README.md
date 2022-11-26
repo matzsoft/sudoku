@@ -16,12 +16,12 @@ Still in early development.
 1. Can check a puzzle for conflicts and display them.
 1. Can check if a puzzle has a solution without showing it.
 1. Can show or hide the puzzle solution.
+1. Allow import of graphics files, converting them to puzzles.
 
 ## TODO List
 For now, in no particular order, this is a list of things needed.
 
 1. When an edited document is closed it is saved, but without a confirmation dialog.
 1. I would like Cell and Drawer to know what SudokuPuzzle they belong to without sacrificing immutability.
-1. Allow graphics files as input, converting them to puzzles.
 1. The puzzle solver can't handle all puzzles yet.
 1. An interactive "solve the puzzle" mode.
