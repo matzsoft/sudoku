@@ -25,3 +25,8 @@ For now, in no particular order, this is a list of things needed.
 1. I would like Cell and Drawer to know what SudokuPuzzle they belong to without sacrificing immutability.
 1. The puzzle solver can't handle all puzzles yet.
 1. An interactive "solve the puzzle" mode.
+1. The graphics file import has several problems:
+    1. It is not very robust, many files crash it.
+    1. There is no warning when an existing file will be overwritten.
+    1. Files that have invalid text representations do not report the error.
+
