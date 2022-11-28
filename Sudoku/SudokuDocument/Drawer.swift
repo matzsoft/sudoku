@@ -158,6 +158,15 @@ extension SudokuDocument {
                 }
                 return
             }
+            
+            if cell.conflict {
+                let rect = CGRect(
+                    x: Drawer.cellMargin, y: Drawer.cellMargin,
+                    width: cellInteriorSize, height: cellInteriorSize
+                )
+
+                draw( symbol: "?", rect: rect, font: conflictFont )
+            }
         }
     }
 }

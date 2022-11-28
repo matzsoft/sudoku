@@ -44,7 +44,7 @@ extension SudokuPuzzle {
         }
         
         func speechString( puzzle: SudokuPuzzle ) -> String {
-            guard let solved = solved else { return "dot" }
+            guard let solved = solved else { return conflict ? "unknown" : "dot" }
             guard let character = puzzle.levelInfo.symbol( from: solved ) else { return "dot" }
             return String( character )
         }

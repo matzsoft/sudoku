@@ -76,7 +76,7 @@ final class SudokuDocument: ReferenceFileDocument {
                 if let index = puzzle.levelInfo.index( from: symbol ) {
                     puzzle.grid[row][col].solved = index
                 } else if symbol != "." {
-                    throw CocoaError( .fileReadCorruptFile )
+                    puzzle.grid[row][col].conflict = true
                 }
             }
         }
