@@ -49,18 +49,6 @@ extension NSImage {
         CGSize( width: size.width / expandedSize.width, height: size.height / expandedSize.height )
     }
 
-    func toBlackAndWhite() -> NSImage? {
-        guard let cgImage = cgImage( forProposedRect: nil, context: nil, hints: nil ) else { return nil }
-        let ciImage = CIImage( cgImage: cgImage )
-        let grayImage = ciImage.applyingFilter( "CIPhotoEffectNoir" )
-        let bwParams: [String: Any] = [ "InputThreshold": 0.25 ]
-        let bwImage = grayImage.applyingFilter( "CIColorThreshold", parameters: bwParams )
-        guard let cgImage = CIContext( options: nil ).createCGImage( bwImage, from: bwImage.extent ) else {
-            return nil
-        }
-        return NSImage( cgImage: cgImage, size: size )
-    }
-
     var pngData: Data? {
         guard let tiffRepresentation = tiffRepresentation else { return nil }
         guard let bitmapImage = NSBitmapImageRep( data: tiffRepresentation ) else { return nil }

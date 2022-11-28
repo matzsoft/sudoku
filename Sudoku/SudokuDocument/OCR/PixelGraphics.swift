@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import Cocoa
 import AppKit
 
 class PGImage {
@@ -40,10 +41,10 @@ class PGImage {
             data: nil,
             width: Int( cgImage.size.width ),
             height: Int( cgImage.size.height ),
-            bitsPerComponent: cgImage.bitsPerComponent,
+            bitsPerComponent: 16,
             bytesPerRow: 0,
             space: cgImage.colorSpace!,
-            bitmapInfo: cgImage.bitmapInfo.rawValue
+            bitmapInfo: CGBitmapInfo( rawValue: CGImageAlphaInfo.noneSkipLast.rawValue ).rawValue
         ) {
             self.context = context
         } else {
@@ -61,6 +62,17 @@ class PGImage {
         return Int( data[index] )
     }
     
+    func toBlackAndWhite() -> PGImage? {
+        let ciImage = CIImage( cgImage: cgImage )
+        let grayImage = ciImage.applyingFilter( "CIPhotoEffectNoir" )
+        let bwParams: [String: Any] = [ "InputThreshold": 0.25 ]
+        let bwImage = grayImage.applyingFilter( "CIColorThreshold", parameters: bwParams )
+        guard let cgImage = CIContext( options: nil ).createCGImage( bwImage, from: bwImage.extent ) else {
+            return nil
+        }
+        return PGImage( cgImage: cgImage, scaleFactor: scaleFactor )
+    }
+
     var nsImage: NSImage? {
         guard let newImage = context.makeImage() else { return nil }
         let adjustedSize = NSSize( width: context.width, height: context.height ).scaled( by: scaleFactor )

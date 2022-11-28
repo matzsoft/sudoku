@@ -11,19 +11,19 @@ import Vision
 import UniformTypeIdentifiers
 
 struct OCR {
-    let originalImage: NSImage
+    let originalImage: PGImage
     let documentImage: PGImage
     let baseURL:       URL
     
     init( from image: NSImage ) throws {
         guard #available( macOS 12.0, * ) else { throw CocoaError( .featureUnsupported ) }
-        guard let bwImage = image.toBlackAndWhite(),
-              let pgImage = PGImage( nsImage: bwImage ),
-              let documentImage = OCR.documentDetector( image: pgImage )
+        guard let pgImage = PGImage( nsImage: image ),
+              let correctedImage = OCR.documentDetector( image: pgImage ),
+              let documentImage = correctedImage.toBlackAndWhite()
         else { throw CocoaError( .fileReadCorruptFile ) }
         let desktop = FileManager.default.urls( for: .desktopDirectory, in: .userDomainMask )[0]
         
-        self.originalImage = image
+        self.originalImage = correctedImage
         self.documentImage = documentImage
         self.baseURL       = desktop.appendingPathComponent( "cells" )
     }
@@ -66,6 +66,7 @@ struct OCR {
     }
     
     func puzzleString() throws -> String {
+        originalImage.write( to: baseURL.appendingPathComponent( "corrected.png" ) )
         documentImage.write( to: baseURL.appendingPathComponent( "document.png" ) )
         
         guard let cells = Grid( image: documentImage ) else {
